@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/*
+ * Paleta "sobremesa": verde albahaca como acento, mostaza para calificaciones,
+ * rojo chile para alertas, sobre un fondo salvia muy claro.
+ */
+@theme {
+  --color-paper: #f3f5f2;
+  --color-surface: #ffffff;
+  --color-ink: #1c2621;
+  --color-ink-soft: #56625b;
+  --color-ink-faint: #8a958e;
+  --color-line: #d9dfda;
+  --color-line-soft: #e8ece8;
+  --color-basil: #2f6b4f;
+  --color-basil-dark: #234f3b;
+  --color-basil-tint: #e3eee8;
+  --color-mustard: #e3a21a;
+  --color-mustard-tint: #fbf1d9;
+  --color-chile: #b8412b;
+  --color-chile-tint: #f8e4df;
+
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background: var(--color-paper);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-basil);
+    outline-offset: 2px;
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .input {
+    @apply block w-full rounded-[var(--radius-sm)] border border-line bg-surface px-3 py-2 text-[15px] text-ink placeholder:text-ink-faint transition-colors focus:border-basil focus:outline-none focus:ring-2 focus:ring-basil/20 disabled:bg-paper disabled:text-ink-soft;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .hint {
+    @apply mt-1 text-[13px] text-ink-soft;
+  }
+  .field-error {
+    @apply mt-1 text-[13px] text-chile;
+  }
+  .panel {
+    @apply rounded-[var(--radius-md)] border border-line bg-surface;
+  }
+  .table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-line px-4 py-2.5 text-[13px] font-medium text-ink-soft;
+  }
+  .table td {
+    @apply border-b border-line-soft px-4 py-3 align-middle;
+  }
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .link {
+    @apply font-medium text-basil underline-offset-2 hover:underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Modo tablet: sin selección de texto, sin zoom por doble toque ni "jalar para recargar". */
+.kiosk-root {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+.kiosk-root textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+html:has(.kiosk-root),
+html:has(.kiosk-root) body {
+  overscroll-behavior: none;
+}
