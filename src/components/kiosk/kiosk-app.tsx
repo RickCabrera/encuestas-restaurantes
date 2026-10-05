@@ -6,7 +6,8 @@ import { readableOn, type RunnerSurvey, type SubmitPayload } from "@/components/
 import { Keypad } from "./keypad";
 import { hashPin, type KioskConfig, kioskStore } from "./storage";
 
-type Phase = "boot" | "pair" | "attract" | "table" | "survey";
+// "table" es la pantalla de espera (la usa el mesero); "welcome" y "survey" son del comensal.
+type Phase = "boot" | "pair" | "table" | "welcome" | "survey";
 
 const CONFIG_REFRESH_MS = 60_000;
 const BACKGROUND_REFRESH_MS = 5 * 60_000;
@@ -20,6 +21,7 @@ export function KioskApp() {
   const [cycleSurvey, setCycleSurvey] = useState<RunnerSurvey | null>(null);
   // Mesa del comensal en turno; la escribe el mesero y se borra al volver a la pantalla de espera.
   const [table, setTable] = useState<string | null>(null);
+  const [waitKey, setWaitKey] = useState(0);
   const [runKey, setRunKey] = useState(0);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
@@ -118,7 +120,7 @@ export function KioskApp() {
       return;
     }
     if (cached) setConfig(cached);
-    setPhase("attract");
+    setPhase("table");
     /* eslint-enable react-hooks/set-state-in-effect */
     void refreshConfig();
     void flushQueue();
@@ -143,7 +145,7 @@ export function KioskApp() {
     window.addEventListener("offline", onOffline);
     const flushT = setInterval(() => void flushQueue(), FLUSH_INTERVAL_MS);
     const cfgT = setInterval(() => {
-      if (phaseRef.current === "attract") void refreshConfig();
+      if (phaseRef.current === "table") void refreshConfig();
     }, BACKGROUND_REFRESH_MS);
     return () => {
       window.removeEventListener("online", onOnline);
@@ -181,34 +183,30 @@ export function KioskApp() {
     if (resetTimer.current) clearTimeout(resetTimer.current);
   };
 
-  const backToAttract = useCallback(() => {
+  const backToTable = useCallback(() => {
     clearTimers();
-    setPhase("attract");
+    setPhase("table");
     setCycleSurvey(null);
     setTable(null);
+    // Monta de nuevo el teclado de la mesa: el campo siempre vuelve vacío.
+    setWaitKey((k) => k + 1);
     if (Date.now() - lastFetch.current > CONFIG_REFRESH_MS) void refreshConfig();
   }, [refreshConfig]);
 
   const bumpIdle = useCallback(() => {
     if (!config) return;
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(backToAttract, config.restaurant.idleSeconds * 1000);
-  }, [config, backToAttract]);
+    idleTimer.current = setTimeout(backToTable, config.restaurant.idleSeconds * 1000);
+  }, [config, backToTable]);
 
   const [starting, setStarting] = useState(false);
 
-  // Primer toque: el mesero escribe la mesa (o la omite) antes de entregar la tablet.
-  const askTable = () => {
-    if (!config?.survey) return;
+  // El mesero escribió la mesa (o la omitió): se prepara la bienvenida para el comensal.
+  const startCycle = async (tableRef: string | null) => {
+    if (!config?.survey || starting) return;
     const el = document.documentElement;
     if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => undefined);
     void requestWakeLock();
-    setPhase("table");
-    bumpIdle();
-  };
-
-  const startCycle = async (tableRef: string | null) => {
-    if (!config?.survey || starting) return;
     // Antes de cada comensal, confirma cuál es la encuesta vigente (por si se publicó otra
     // mientras la tablet esperaba). Sin internet o si tarda, usa la guardada.
     setStarting(true);
@@ -218,13 +216,17 @@ export function KioskApp() {
     setStarting(false);
     const current = fresh ?? config;
     if (!current.survey || !current.restaurant.active) {
-      backToAttract();
+      backToTable();
       return;
     }
-    // Por si la tablet volvió sola a la pantalla de espera mientras se confirmaba la encuesta.
-    if (phaseRef.current !== "table") return;
     setTable(tableRef);
     setCycleSurvey(current.survey);
+    setPhase("welcome");
+    bumpIdle();
+  };
+
+  // El comensal tocó la bienvenida.
+  const startSurvey = () => {
     setRunKey((k) => k + 1);
     setPhase("survey");
     bumpIdle();
@@ -245,8 +247,8 @@ export function KioskApp() {
   const onDone = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     const secs = config?.restaurant.resetSeconds ?? 8;
-    resetTimer.current = setTimeout(backToAttract, secs * 1000);
-  }, [config, backToAttract]);
+    resetTimer.current = setTimeout(backToTable, secs * 1000);
+  }, [config, backToTable]);
 
   useEffect(() => clearTimers, []);
 
@@ -262,7 +264,7 @@ export function KioskApp() {
           kioskStore.setToken(token);
           setNotice(null);
           await refreshConfig();
-          setPhase("attract");
+          setPhase("table");
         }}
       />
     );
@@ -290,7 +292,7 @@ export function KioskApp() {
             doneNote={
               <button
                 type="button"
-                onClick={backToAttract}
+                onClick={backToTable}
                 className="rounded-full px-4 py-2 text-base text-ink-soft underline-offset-2 hover:underline"
               >
                 Terminar
@@ -298,14 +300,31 @@ export function KioskApp() {
             }
           />
         </div>
-      ) : phase === "table" && config?.survey ? (
-        <TableScreen busy={starting} onActivity={bumpIdle} onStart={(t) => void startCycle(t)} />
+      ) : phase === "welcome" && cycleSurvey && brand ? (
+        <AttractScreen
+          config={config ? { ...config, survey: cycleSurvey } : null}
+          brandBg={brandBg}
+          brandInk={brandInk}
+          onStart={startSurvey}
+        />
+      ) : config?.survey && config.restaurant.active ? (
+        <TableScreen
+          key={waitKey}
+          busy={starting}
+          paused={menu !== "closed"}
+          onActivity={bumpIdle}
+          onStart={(t) => void startCycle(t)}
+        />
       ) : (
-        <AttractScreen config={config} brandBg={brandBg} brandInk={brandInk} onStart={askTable} />
+        // Sin encuesta que mostrar (sin conexión, en pausa o sin publicar): solo el aviso.
+        <AttractScreen config={config} brandBg={brandBg} brandInk={brandInk} onStart={() => undefined} />
       )}
 
-      {phase === "survey" && table ? (
-        <div className="pointer-events-none absolute top-3 right-3 z-30 rounded-full bg-ink/10 px-3 py-1 text-[13px] text-ink-soft">
+      {table && (phase === "welcome" || phase === "survey") ? (
+        <div
+          className="pointer-events-none absolute top-3 right-3 z-30 rounded-full border border-current/25 px-3 py-1 text-[13px] opacity-75"
+          style={{ color: phase === "welcome" ? brandInk : "var(--color-ink)" }}
+        >
           Mesa {table}
         </div>
       ) : null}
@@ -323,7 +342,7 @@ export function KioskApp() {
             await refreshConfig();
             await flushQueue();
             setMenu("closed");
-            backToAttract();
+            backToTable();
           }}
           onUnpair={() => {
             if (pending > 0 && !confirm(`Hay ${pending} respuestas sin enviar que se perderán. ¿Desvincular de todos modos?`))
@@ -405,18 +424,22 @@ function AttractScreen({
   );
 }
 
-/** Paso del mesero antes de entregar la tablet: número de mesa, o "Sin mesa" para no detenerse. */
+/** Pantalla de espera, para el mesero: número de mesa, o "Sin mesa" para no detenerse. */
 function TableScreen({
   busy,
+  paused,
   onActivity,
   onStart,
 }: {
   busy: boolean;
+  /** El menú del personal está abierto encima. */
+  paused: boolean;
   onActivity: () => void;
   onStart: (table: string | null) => void;
 }) {
   return (
     <main
+      inert={paused}
       className="flex h-full flex-col items-center justify-center overflow-y-auto bg-paper px-6 py-10"
       onPointerDown={onActivity}
       onKeyDown={onActivity}
@@ -431,6 +454,7 @@ function TableScreen({
         submitLabel="Comenzar"
         busy={busy}
         busyLabel="Un momento…"
+        disabled={paused}
         // "05" y "5" son la misma mesa: se guarda sin ceros a la izquierda para que el filtro la encuentre.
         onSubmit={(v) => onStart(v.replace(/^0+(?=\d)/, ""))}
       >

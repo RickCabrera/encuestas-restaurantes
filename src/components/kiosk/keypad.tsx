@@ -14,6 +14,7 @@ export function Keypad({
   busy,
   busyLabel = "Verificando…",
   masked,
+  disabled,
   children,
 }: {
   length: number;
@@ -24,6 +25,8 @@ export function Keypad({
   busy?: boolean;
   busyLabel?: string;
   masked?: boolean;
+  /** Ignora el teclado físico (p. ej. mientras otro teclado está abierto encima). */
+  disabled?: boolean;
   /** Acciones extra debajo del botón principal. */
   children?: React.ReactNode;
 }) {
@@ -33,7 +36,9 @@ export function Keypad({
 
   // También acepta el teclado físico (útil al vincular desde una computadora).
   const submitRef = useRef<() => void>(() => {});
+  const disabledRef = useRef(disabled);
   useEffect(() => {
+    disabledRef.current = disabled;
     submitRef.current = () => {
       if (!ready) return;
       onSubmit(value);
@@ -42,6 +47,7 @@ export function Keypad({
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (disabledRef.current) return;
       if (/^\d$/.test(e.key)) press(e.key);
       else if (e.key === "Backspace") setValue((v) => v.slice(0, -1));
       else if (e.key === "Enter") submitRef.current();
