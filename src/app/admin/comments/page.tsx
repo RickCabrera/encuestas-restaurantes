@@ -32,7 +32,10 @@ export default async function CommentsPage({ searchParams }: { searchParams: Pro
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-soft">
                   <span>{c.restaurant}</span>
                   <span>{formatDateTime(c.submittedAt)}</span>
-                  <span>{c.channel === "KIOSK" ? "Tablet" : c.tableRef ? `QR, mesa ${c.tableRef}` : "QR"}</span>
+                  <span>
+                    {c.channel === "KIOSK" ? "Tablet" : "QR"}
+                    {c.tableRef ? `, mesa ${c.tableRef}` : ""}
+                  </span>
                   {c.food !== null ? <span>Alimentos {c.food}★</span> : null}
                   {c.service !== null ? <span>Atención {c.service}★</span> : null}
                   {c.nps !== null ? <span>Recomienda {c.nps}/10</span> : null}

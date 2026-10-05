@@ -25,15 +25,33 @@ test("tablet: se vincula con código, responde, funciona sin internet y sincroni
   await t.getByRole("button", { name: "Vincular" }).click();
   await expect(t.getByText("Toca para comenzar")).toBeVisible();
 
-  // Ciclo en línea
+  // Ciclo en línea: el mesero escribe la mesa antes de entregar la tablet.
   await t.getByRole("button", { name: /Toca para comenzar/ }).click();
+  await expect(t.getByRole("heading", { name: "¿Mesa?" })).toBeVisible();
+  await t.getByRole("button", { name: "5", exact: true }).click();
+  await t.getByRole("button", { name: "Comenzar" }).click();
+  await expect(t.getByText("Mesa 5", { exact: true })).toBeVisible();
   await answerBaseSurvey(t, { service: 1, nps: 3 });
   await t.getByRole("button", { name: "Terminar" }).click();
   await expect(t.getByText("Toca para comenzar")).toBeVisible();
 
-  // Sin internet: la respuesta queda en cola y el comensal no ve error.
+  // Siguiente comensal: el campo de mesa vuelve vacío y "Sin mesa" deja empezar sin número.
+  await t.getByRole("button", { name: /Toca para comenzar/ }).click();
+  await expect(t.getByLabel("0 dígitos escritos")).toBeVisible();
+  await expect(t.getByRole("button", { name: "Comenzar" })).toBeDisabled();
+  await t.getByRole("button", { name: "Sin mesa" }).click();
+  await expect(t.getByText("Pregunta 1 de 6")).toBeVisible();
+  await expect(t.getByText(/^Mesa \d/)).toHaveCount(0);
+  await answerBaseSurvey(t);
+  await t.getByRole("button", { name: "Terminar" }).click();
+  await expect(t.getByText("Toca para comenzar")).toBeVisible();
+
+  // Sin internet: la respuesta queda en cola (con su mesa) y el comensal no ve error.
   await tablet.setOffline(true);
   await t.getByRole("button", { name: /Toca para comenzar/ }).click();
+  await t.getByRole("button", { name: "3", exact: true }).click();
+  await t.getByRole("button", { name: "Comenzar" }).click();
+  await expect(t.getByText("Mesa 3", { exact: true })).toBeVisible();
   await answerBaseSurvey(t);
   await t.getByRole("button", { name: "Terminar" }).click();
   await expect(t.getByText(/1 por enviar/)).toBeVisible();
@@ -59,6 +77,7 @@ test("tablet: se vincula con código, responde, funciona sin internet y sincroni
   await page.getByRole("button", { name: "Publicar" }).click();
   await expect(page.getByText("Encuesta publicada")).toBeVisible();
   await t.getByRole("button", { name: /Toca para comenzar/ }).click();
+  await t.getByRole("button", { name: "Sin mesa" }).click();
   await expect(t.getByRole("heading", { name: "¿Primera vez en Casa Jarocha?" })).toBeVisible();
   await t.reload();
 
@@ -76,9 +95,20 @@ test("tablet: se vincula con código, responde, funciona sin internet y sincroni
   await expect(t.getByText("Tablet E2E")).toBeVisible();
   await t.getByRole("button", { name: "Cerrar" }).click();
 
-  // Ambas respuestas llegaron al panel con el nombre de la tablet.
+  // Las tres respuestas llegaron al panel con el nombre de la tablet; dos de ellas con mesa.
   await page.goto("/admin/responses?channel=KIOSK");
-  await expect(page.getByRole("row").filter({ hasText: "Tablet E2E" })).toHaveCount(2);
+  await expect(page.getByRole("row").filter({ hasText: "Tablet E2E" })).toHaveCount(3);
+  await expect(page.getByRole("row").filter({ hasText: /Tablet E2E, mesa/ })).toHaveCount(2);
+  // La que se respondió sin internet conserva su mesa.
+  await page.goto("/admin/responses?table=3");
+  await expect(page.getByRole("row").filter({ hasText: "Tablet E2E, mesa 3" })).toHaveCount(1);
+  await page.goto("/admin/responses?table=5");
+  const mesa5 = page.getByRole("row").filter({ hasText: "Tablet E2E, mesa 5" });
+  await expect(mesa5).toHaveCount(1);
+  const csv = await (await page.request.get("/api/export?table=5")).text();
+  expect(csv).toContain("Tablet,Tablet E2E,5,");
+  await mesa5.getByRole("link").click();
+  await expect(page.getByText("Tablet: Tablet E2E, mesa 5")).toBeVisible();
 
   // Desvincular desde el panel devuelve la tablet a la pantalla de código.
   await page.goto("/admin/devices");

@@ -59,7 +59,8 @@ export default async function ResponsesPage({ searchParams }: { searchParams: Pr
                     </td>
                     <td className="min-w-[160px]">{r.restaurant}</td>
                     <td className="whitespace-nowrap text-ink-soft">
-                      {r.channel === "KIOSK" ? (r.device ?? "Tablet") : r.tableRef ? `QR, mesa ${r.tableRef}` : "QR"}
+                      {r.channel === "KIOSK" ? (r.device ?? "Tablet") : "QR"}
+                      {r.tableRef ? `, mesa ${r.tableRef}` : ""}
                     </td>
                     <td className="text-right">
                       <Stars n={r.food} />

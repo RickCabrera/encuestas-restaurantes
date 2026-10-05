@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { count, eq } from "drizzle-orm";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { POST } from "@/app/api/responses/route";
 import { db } from "@/db";
 import { answers, devices, responses, surveys } from "@/db/schema";
+import { sha256 } from "@/lib/crypto";
 import { SubmitError, submitResponse } from "@/lib/submit-response";
 import { answersFor, createRestaurantWithSurvey, resetDb } from "./helpers";
 
@@ -131,5 +133,58 @@ describe("submitResponse (tablet)", () => {
         { channel: "KIOSK", deviceId: dev.id, restaurantId: a.restaurant.id },
       ),
     ).rejects.toThrow("ya no está activa");
+  });
+
+  it("guarda la mesa que escribió el mesero, o null si empezó sin mesa", async () => {
+    const a = await createRestaurantWithSurvey("a");
+    const [dev] = await db.insert(devices).values({ restaurantId: a.restaurant.id, name: "T" }).returning();
+    const ctx = { channel: "KIOSK" as const, deviceId: dev.id, restaurantId: a.restaurant.id };
+    const withTable = randomUUID();
+    await submitResponse({ id: withTable, surveyId: a.survey.id, answers: answersFor(a.byMetric), tableRef: "5" }, ctx);
+    expect(await db.query.responses.findFirst({ where: eq(responses.id, withTable) })).toMatchObject({
+      channel: "KIOSK",
+      deviceId: dev.id,
+      tableRef: "5",
+    });
+    // Sin el campo (respuestas que ya estaban en la cola offline) o vacío: se guarda sin mesa.
+    for (const tableRef of [undefined, null, ""]) {
+      const id = randomUUID();
+      await submitResponse({ id, surveyId: a.survey.id, answers: answersFor(a.byMetric), tableRef }, ctx);
+      const saved = await db.query.responses.findFirst({ where: eq(responses.id, id) });
+      expect(saved?.tableRef).toBeNull();
+    }
+  });
+});
+
+describe("POST /api/responses (tablet)", () => {
+  const token = "tablet-token-0123456789abcdef";
+  async function post(body: Record<string, unknown>) {
+    return POST(
+      new Request("http://localhost/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      }),
+    );
+  }
+
+  it("valida la mesa igual que en QR: recorta espacios y rechaza más de 20 caracteres", async () => {
+    // Evita el `after()` de limpieza ocasional, que solo existe dentro de una petición de Next.
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const a = await createRestaurantWithSurvey("a");
+    await db.insert(devices).values({ restaurantId: a.restaurant.id, name: "T", tokenHash: sha256(token) });
+    const base = { surveyId: a.survey.id, answers: answersFor(a.byMetric) };
+
+    const tooLong = await post({ ...base, id: randomUUID(), tableRef: "9".repeat(21) });
+    expect(tooLong.status).toBe(400);
+    const [{ n }] = await db.select({ n: count() }).from(responses);
+    expect(n).toBe(0);
+
+    const id = randomUUID();
+    const ok = await post({ ...base, id, tableRef: " 12 " });
+    expect(ok.status).toBe(200);
+    const saved = await db.query.responses.findFirst({ where: eq(responses.id, id) });
+    expect(saved).toMatchObject({ channel: "KIOSK", tableRef: "12" });
+    vi.restoreAllMocks();
   });
 });

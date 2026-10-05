@@ -72,11 +72,8 @@ export default async function ResponseDetailPage({ params }: { params: Promise<{
         </ol>
         <aside className="panel h-fit space-y-4 p-5 text-sm">
           <Detail label="Origen">
-            {r.channel === "KIOSK"
-              ? `Tablet${r.device ? `: ${r.device.name}` : ""}`
-              : r.tableRef
-                ? `QR, mesa ${r.tableRef}`
-                : "QR"}
+            {r.channel === "KIOSK" ? `Tablet${r.device ? `: ${r.device.name}` : ""}` : "QR"}
+            {r.tableRef ? `, mesa ${r.tableRef}` : ""}
           </Detail>
           <Detail label="Encuesta">
             <Link href={`/admin/surveys/${r.survey.id}`} className="link">

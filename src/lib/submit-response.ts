@@ -105,7 +105,8 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
         restaurantId: survey.restaurantId,
         channel: ctx.channel,
         deviceId: ctx.channel === "KIOSK" ? ctx.deviceId : null,
-        tableRef: ctx.channel === "QR" ? input.tableRef || null : null,
+        // QR: viene en el enlace de la mesa. Tablet: lo escribe el mesero antes de entregarla.
+        tableRef: input.tableRef || null,
         startedAt: Number.isFinite(started) ? new Date(started) : null,
         submittedAt,
         durationSec,

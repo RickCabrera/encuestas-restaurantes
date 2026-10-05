@@ -6,17 +6,20 @@ import { readableOn, type RunnerSurvey, type SubmitPayload } from "@/components/
 import { Keypad } from "./keypad";
 import { hashPin, type KioskConfig, kioskStore } from "./storage";
 
-type Phase = "boot" | "pair" | "attract" | "survey";
+type Phase = "boot" | "pair" | "attract" | "table" | "survey";
 
 const CONFIG_REFRESH_MS = 60_000;
 const BACKGROUND_REFRESH_MS = 5 * 60_000;
 const FLUSH_INTERVAL_MS = 30_000;
 const SECRET_HOLD_MS = 3000;
+const TABLE_MAX_DIGITS = 4;
 
 export function KioskApp() {
   const [phase, setPhase] = useState<Phase>("boot");
   const [config, setConfig] = useState<KioskConfig | null>(null);
   const [cycleSurvey, setCycleSurvey] = useState<RunnerSurvey | null>(null);
+  // Mesa del comensal en turno; la escribe el mesero y se borra al volver a la pantalla de espera.
+  const [table, setTable] = useState<string | null>(null);
   const [runKey, setRunKey] = useState(0);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
@@ -182,6 +185,7 @@ export function KioskApp() {
     clearTimers();
     setPhase("attract");
     setCycleSurvey(null);
+    setTable(null);
     if (Date.now() - lastFetch.current > CONFIG_REFRESH_MS) void refreshConfig();
   }, [refreshConfig]);
 
@@ -193,11 +197,18 @@ export function KioskApp() {
 
   const [starting, setStarting] = useState(false);
 
-  const startCycle = async () => {
-    if (!config?.survey || starting) return;
+  // Primer toque: el mesero escribe la mesa (o la omite) antes de entregar la tablet.
+  const askTable = () => {
+    if (!config?.survey) return;
     const el = document.documentElement;
     if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => undefined);
     void requestWakeLock();
+    setPhase("table");
+    bumpIdle();
+  };
+
+  const startCycle = async (tableRef: string | null) => {
+    if (!config?.survey || starting) return;
     // Antes de cada comensal, confirma cuál es la encuesta vigente (por si se publicó otra
     // mientras la tablet esperaba). Sin internet o si tarda, usa la guardada.
     setStarting(true);
@@ -206,7 +217,13 @@ export function KioskApp() {
       : undefined;
     setStarting(false);
     const current = fresh ?? config;
-    if (!current.survey || !current.restaurant.active) return;
+    if (!current.survey || !current.restaurant.active) {
+      backToAttract();
+      return;
+    }
+    // Por si la tablet volvió sola a la pantalla de espera mientras se confirmaba la encuesta.
+    if (phaseRef.current !== "table") return;
+    setTable(tableRef);
     setCycleSurvey(current.survey);
     setRunKey((k) => k + 1);
     setPhase("survey");
@@ -217,12 +234,12 @@ export function KioskApp() {
     async (payload: SubmitPayload) => {
       // Siempre se guarda primero en la tablet: el comensal nunca ve un error por falta de internet.
       const queue = kioskStore.getQueue();
-      queue.push({ payload, enqueuedAt: Date.now(), attempts: 0 });
+      queue.push({ payload: table ? { ...payload, tableRef: table } : payload, enqueuedAt: Date.now(), attempts: 0 });
       kioskStore.setQueue(queue);
       setPending(queue.length);
       void flushQueue();
     },
-    [flushQueue],
+    [flushQueue, table],
   );
 
   const onDone = useCallback(() => {
@@ -281,15 +298,17 @@ export function KioskApp() {
             }
           />
         </div>
+      ) : phase === "table" && config?.survey ? (
+        <TableScreen busy={starting} onActivity={bumpIdle} onStart={(t) => void startCycle(t)} />
       ) : (
-        <AttractScreen
-          config={config}
-          brandBg={brandBg}
-          brandInk={brandInk}
-          onStart={() => void startCycle()}
-          starting={starting}
-        />
+        <AttractScreen config={config} brandBg={brandBg} brandInk={brandInk} onStart={askTable} />
       )}
+
+      {phase === "survey" && table ? (
+        <div className="pointer-events-none absolute top-3 right-3 z-30 rounded-full bg-ink/10 px-3 py-1 text-[13px] text-ink-soft">
+          Mesa {table}
+        </div>
+      ) : null}
 
       <StatusDot online={online} pending={pending} />
 
@@ -322,13 +341,11 @@ function AttractScreen({
   brandBg,
   brandInk,
   onStart,
-  starting,
 }: {
   config: KioskConfig | null;
   brandBg: string;
   brandInk: string;
   onStart: () => void;
-  starting: boolean;
 }) {
   const r = config?.restaurant;
   const paused = r && !r.active;
@@ -339,8 +356,7 @@ function AttractScreen({
     <button
       type="button"
       onClick={ready ? onStart : undefined}
-      disabled={!ready || starting}
-      aria-busy={starting}
+      disabled={!ready}
       style={{ background: ready ? brandBg : "var(--color-paper)", color: ready ? brandInk : "var(--color-ink)" }}
       className="flex h-full w-full flex-col items-center justify-between px-8 py-10 text-center"
       aria-label={ready ? "Toca para comenzar la encuesta" : undefined}
@@ -380,12 +396,54 @@ function AttractScreen({
           className="inline-flex h-16 items-center rounded-full px-12 font-display text-2xl font-semibold motion-safe:animate-[pulse_2.4s_ease-in-out_infinite]"
           style={{ background: brandInk, color: brandBg }}
         >
-          {starting ? "Un momento…" : "Toca para comenzar"}
+          Toca para comenzar
         </span>
       ) : (
         <span />
       )}
     </button>
+  );
+}
+
+/** Paso del mesero antes de entregar la tablet: número de mesa, o "Sin mesa" para no detenerse. */
+function TableScreen({
+  busy,
+  onActivity,
+  onStart,
+}: {
+  busy: boolean;
+  onActivity: () => void;
+  onStart: (table: string | null) => void;
+}) {
+  return (
+    <main
+      className="flex h-full flex-col items-center justify-center overflow-y-auto bg-paper px-6 py-10"
+      onPointerDown={onActivity}
+      onKeyDown={onActivity}
+    >
+      <h1 className="text-center font-display text-4xl font-semibold">¿Mesa?</h1>
+      <p className="mt-3 mb-8 max-w-md text-center text-lg text-ink-soft">
+        Escribe el número de mesa y entrega la tablet al comensal.
+      </p>
+      <Keypad
+        length={1}
+        maxLength={TABLE_MAX_DIGITS}
+        submitLabel="Comenzar"
+        busy={busy}
+        busyLabel="Un momento…"
+        // "05" y "5" son la misma mesa: se guarda sin ceros a la izquierda para que el filtro la encuentre.
+        onSubmit={(v) => onStart(v.replace(/^0+(?=\d)/, ""))}
+      >
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onStart(null)}
+          className="mt-3 h-14 w-full rounded-2xl border border-line bg-surface text-lg font-medium text-ink disabled:opacity-40"
+        >
+          Sin mesa
+        </button>
+      </Keypad>
+    </main>
   );
 }
 

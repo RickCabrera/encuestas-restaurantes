@@ -27,6 +27,7 @@ export type SubmitPayload = {
   answers: Record<string, AnswerValue>;
   startedAt: string;
   submittedAt: string;
+  tableRef?: string | null;
   website?: string; // honeypot
 };
 

@@ -4,7 +4,7 @@ import { Delete } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
-/** Teclado numérico grande para tablets (código de vinculación y PIN). */
+/** Teclado numérico grande para tablets (código de vinculación, PIN y número de mesa). */
 export function Keypad({
   length,
   maxLength = length,
@@ -12,7 +12,9 @@ export function Keypad({
   submitLabel,
   error,
   busy,
+  busyLabel = "Verificando…",
   masked,
+  children,
 }: {
   length: number;
   maxLength?: number;
@@ -20,7 +22,10 @@ export function Keypad({
   submitLabel: string;
   error?: string | null;
   busy?: boolean;
+  busyLabel?: string;
   masked?: boolean;
+  /** Acciones extra debajo del botón principal. */
+  children?: React.ReactNode;
 }) {
   const [value, setValue] = useState("");
   const press = (d: string) => setValue((v) => (v.length < maxLength ? v + d : v));
@@ -91,8 +96,9 @@ export function Keypad({
         }}
         className="mt-5 h-16 w-full rounded-2xl bg-basil font-display text-xl font-semibold text-white transition-opacity disabled:opacity-40"
       >
-        {busy ? "Verificando…" : submitLabel}
+        {busy ? busyLabel : submitLabel}
       </button>
+      {children}
     </div>
   );
 }
