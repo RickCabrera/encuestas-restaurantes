@@ -124,7 +124,7 @@ tests/                 unit, integration (con BD), e2e (Playwright)
 2. La tablet abre `/kiosk`, escribe el código y recibe un token aleatorio. En el servidor solo se guarda su SHA-256; en la tablet, en `localStorage`.
 3. La tablet descarga `/api/kiosk/config` y la guarda en caché. Un service worker cachea la app, así que abre aunque no haya internet.
 4. Cada respuesta se guarda primero en una cola local y luego se envía. Si no hay red, se reintenta cada 30 s y al volver la conexión. El comensal nunca ve un error.
-5. La configuración se refresca al volver a la pantalla de inicio (máx. 1 vez/min) y cada 5 min. Una encuesta recién publicada entra en el siguiente ciclo, sin reinstalar nada.
+5. La configuración se refresca al volver a la pantalla de inicio (máx. 1 vez/min) y cada 30 min, salvo de 00:00 a 07:00 (hora de Ciudad de México). Una encuesta recién publicada entra en el siguiente ciclo, sin reinstalar nada.
 6. **Menú del personal:** mantener presionada 3 s la esquina superior izquierda y escribir el PIN. El PIN se valida en la tablet, contra un hash que solo reciben tablets vinculadas, para que funcione sin internet. Tras 5 intentos fallidos, espera de 30 s.
 7. **Desvincular desde el panel** invalida el token: la tablet regresa sola a la pantalla de código.
 

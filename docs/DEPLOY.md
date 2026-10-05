@@ -74,7 +74,8 @@ En Vercel → Domains, agrega `encuestas.cliente.com` y crea el CNAME que indica
 ## 6. Monitoreo (US-9.6)
 
 - **Sentry:** crea un proyecto Next.js, pon los DSN en Vercel y configura las alertas al correo del equipo.
-- **UptimeRobot** (u otro): monitor HTTP cada 5 min a `https://encuestas.cliente.com/api/health`. Responde 200 si la BD está bien y 503 si no.
+- **UptimeRobot** (u otro): monitor HTTP cada 5 min a `https://encuestas.cliente.com/api/health`, **sin `?db=1`**. Esa URL solo confirma que la app está arriba y no toca la base; así el monitor no la mantiene despierta (en Neon gratis la base se suspende sola tras 5 min sin consultas, y despierta todo el mes agota las horas de cómputo incluidas).
+- **Diagnóstico manual de la base:** abre `https://encuestas.cliente.com/api/health?db=1`. Hace un `select 1` y responde 200 si la BD está bien y 503 si no. No la pongas en un monitor.
 - **Logs:** Vercel → Logs. Los eventos importantes salen en JSON (`response.saved`, `auth.login_failed`, `device.paired`, etc.).
 
 ## Alternativa: VPS con Docker

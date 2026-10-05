@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SurveyRunner } from "@/components/survey/survey-runner";
 import { readableOn, type RunnerSurvey, type SubmitPayload } from "@/components/survey/types";
 import { Keypad } from "./keypad";
+import { BACKGROUND_REFRESH_MS, isNightPause } from "./schedule";
 import { hashPin, type KioskConfig, kioskStore } from "./storage";
 
 // "table" es la pantalla de espera (la usa el mesero); "welcome" y "survey" son del comensal.
 type Phase = "boot" | "pair" | "table" | "welcome" | "survey";
 
 const CONFIG_REFRESH_MS = 60_000;
-const BACKGROUND_REFRESH_MS = 5 * 60_000;
 const FLUSH_INTERVAL_MS = 30_000;
 const SECRET_HOLD_MS = 3000;
 const TABLE_MAX_DIGITS = 4;
@@ -143,9 +143,10 @@ export function KioskApp() {
     const onOffline = () => setOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    // La cola solo llama al servidor si hay respuestas pendientes.
     const flushT = setInterval(() => void flushQueue(), FLUSH_INTERVAL_MS);
     const cfgT = setInterval(() => {
-      if (phaseRef.current === "table") void refreshConfig();
+      if (phaseRef.current === "table" && !isNightPause()) void refreshConfig();
     }, BACKGROUND_REFRESH_MS);
     return () => {
       window.removeEventListener("online", onOnline);
