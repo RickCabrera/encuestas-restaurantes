@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import postgres from "postgres";
 
 export async function login(page: Page, email = "admin@demo.com", password = "Admin12345!") {
   await page.goto("/login");
@@ -27,4 +28,14 @@ export async function answerBaseSurvey(
   if (comment) await page.getByRole("textbox").fill(comment);
   await page.getByRole("button", { name: "Enviar" }).click();
   await expect(page.getByText("¡Vuelva pronto!")).toBeVisible();
+}
+
+/**
+ * Borra los contadores de rate limit de la BD de E2E. Toda la suite sale de la misma IP y
+ * ya roza el límite de 20 inicios de sesión cada 15 minutos.
+ */
+export async function clearRateLimits() {
+  const sql = postgres(process.env.E2E_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/encuestas_e2e", { max: 1 });
+  await sql`DELETE FROM rate_limits`;
+  await sql.end();
 }

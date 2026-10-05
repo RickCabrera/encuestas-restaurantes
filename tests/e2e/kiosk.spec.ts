@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { answerBaseSurvey, login } from "./helpers";
+import { answerBaseSurvey, clearRateLimits, login } from "./helpers";
 
 /** Crea una tablet en el panel y devuelve su código de vinculación. */
 async function createDeviceCode(page: Page, name: string) {
@@ -147,6 +147,7 @@ test("regresión QA 3: eliminar una tablet conserva su nombre en las respuestas"
 });
 
 test("tablet: el orden es ¿Mesa? → bienvenida → encuesta → de vuelta a ¿Mesa?", async ({ page, browser }) => {
+  await clearRateLimits();
   await login(page);
   const code = await createDeviceCode(page, "Kiosko Orden");
   const tablet = await browser.newContext({ viewport: { width: 1180, height: 820 }, hasTouch: true });

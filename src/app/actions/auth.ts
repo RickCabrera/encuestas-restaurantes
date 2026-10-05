@@ -13,6 +13,7 @@ import { randomToken, sha256 } from "@/lib/crypto";
 import { escapeHtml, sendEmail } from "@/lib/email";
 import { RESTAURANT_COOKIE } from "@/lib/filters";
 import { logger } from "@/lib/logger";
+import { passwordSchema } from "@/lib/password-rules";
 import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import { appUrl, clientIp } from "@/lib/request";
 
@@ -81,8 +82,6 @@ export async function logoutAction() {
   (await cookies()).delete(RESTAURANT_COOKIE);
   redirect("/login");
 }
-
-const passwordSchema = z.string().min(8, "Mínimo 8 caracteres").max(128, "Máximo 128 caracteres");
 
 const changeSchema = z
   .object({

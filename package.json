@@ -19,6 +19,7 @@
     "db:seed:demo": "dotenv -- tsx scripts/seed.ts --demo",
     "db:studio": "dotenv -- drizzle-kit studio",
     "create-admin": "dotenv -- tsx scripts/create-admin.ts",
+    "invite:admin": "dotenv -- tsx scripts/create-invite.ts",
     "prepare": "husky || true"
   },
   "dependencies": {

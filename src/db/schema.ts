@@ -201,6 +201,23 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   ...timestamps,
 });
 
+/** Enlaces de registro de un solo uso. No hay registro público: sin invitación no se crea cuenta. */
+export const signupInvites = pgTable("signup_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** SHA-256 del token; el token en claro solo existe en el enlace. */
+  tokenHash: text("token_hash").notNull().unique(),
+  role: userRole("role").notNull().default("ADMIN"),
+  /** Restaurantes que verá si el rol es MANAGER. */
+  restaurantIds: uuid("restaurant_ids")
+    .array()
+    .notNull()
+    .default(sql`'{}'::uuid[]`),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  usedByUserId: uuid("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  ...timestamps,
+});
+
 /** Contadores de ventana fija para rate limiting (funciona en serverless). */
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
@@ -264,6 +281,7 @@ export type Question = typeof questions.$inferSelect;
 export type Device = typeof devices.$inferSelect;
 export type Response = typeof responses.$inferSelect;
 export type Answer = typeof answers.$inferSelect;
+export type SignupInvite = typeof signupInvites.$inferSelect;
 export type QuestionType = (typeof questionType.enumValues)[number];
 export type QuestionMetric = (typeof questionMetric.enumValues)[number];
 export type SurveyStatus = (typeof surveyStatus.enumValues)[number];

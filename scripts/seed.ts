@@ -35,7 +35,7 @@ async function main() {
 
   console.log("Limpiando tablas…");
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, rate_limits, restaurants, users CASCADE`,
+    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, restaurants, users CASCADE`,
   );
 
   const [admin] = await db

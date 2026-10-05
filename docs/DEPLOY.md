@@ -45,6 +45,14 @@ Activa los backups diarios: en Supabase vienen en el plan Pro (en Free, descarga
    DATABASE_URL="<url directa prod>" npx tsx scripts/create-admin.ts correo@cliente.com "Nombre" "ContraseñaSegura"
    ```
 
+   O, para que el cliente elija su propio correo y contraseña, genera un enlace de registro de un solo uso (vence en 7 días) y envíaselo:
+
+   ```bash
+   DATABASE_URL="<url directa prod>" APP_URL="https://encuestas.cliente.com" npx tsx scripts/create-invite.ts
+   ```
+
+   Después, los administradores pueden generar más enlaces desde Usuarios → "Invitar con enlace". No existe registro público: `/registro` solo funciona con un enlace vigente.
+
    **No corras el seed en producción**: borra todas las tablas.
 
 ## 4. Dominio (US-9.4)
