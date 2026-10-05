@@ -1,4 +1,4 @@
-import { asc, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
 import { restaurants } from "@/db/schema";
@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/auth";
 export const metadata = { title: "Restaurantes" };
 
 export default async function RestaurantsPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const rows = await db
     .select({
       id: restaurants.id,
@@ -25,6 +25,7 @@ export default async function RestaurantsPage() {
       responses: sql<number>`(select count(*)::int from responses r where r.restaurant_id = restaurants.id)`,
     })
     .from(restaurants)
+    .where(eq(restaurants.organizationId, admin.organizationId))
     .orderBy(asc(restaurants.name));
 
   return (

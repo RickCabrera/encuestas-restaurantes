@@ -6,13 +6,28 @@ import { Field, Notice } from "@/components/ui/primitives";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { initialState } from "@/lib/action-state";
 
-export function SignupForm({ codigo }: { codigo: string }) {
+export function SignupForm({ codigo, newOrg }: { codigo: string; newOrg: boolean }) {
   const [state, action] = useActionState(signupAction, initialState);
   const fe = state.fieldErrors ?? {};
   return (
     <form action={action} className="space-y-5" noValidate>
       {state.error ? <Notice tone="red">{state.error}</Notice> : null}
       <input type="hidden" name="codigo" value={codigo} />
+      {newOrg ? (
+        <Field label="Nombre de tu cadena o negocio" htmlFor="orgName" error={fe.orgName}>
+          <input
+            id="orgName"
+            name="orgName"
+            autoComplete="organization"
+            required
+            maxLength={80}
+            className="input"
+            autoFocus
+            defaultValue={state.values?.orgName}
+            key={`org-${state.values?.orgName ?? ""}`}
+          />
+        </Field>
+      ) : null}
       <Field label="Nombre" htmlFor="name" error={fe.name}>
         <input
           id="name"
@@ -20,7 +35,7 @@ export function SignupForm({ codigo }: { codigo: string }) {
           autoComplete="name"
           required
           className="input"
-          autoFocus
+          autoFocus={!newOrg}
           defaultValue={state.values?.name}
           key={`name-${state.values?.name ?? ""}`}
         />

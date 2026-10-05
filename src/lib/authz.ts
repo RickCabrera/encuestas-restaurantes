@@ -1,5 +1,5 @@
 import "server-only";
-import { inArray, type SQL, sql } from "drizzle-orm";
+import { eq, inArray, type SQL, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import type { SessionUser } from "./auth";
 
@@ -9,8 +9,9 @@ export class ForbiddenError extends Error {
   }
 }
 
+/** El restaurante es de la cadena del usuario y, si es gerente, además lo tiene asignado. */
 export function canAccessRestaurant(user: SessionUser, restaurantId: string) {
-  return user.restaurantIds === null || user.restaurantIds.includes(restaurantId);
+  return user.restaurantIds.includes(restaurantId);
 }
 
 export function assertRestaurantAccess(user: SessionUser, restaurantId: string) {
@@ -23,10 +24,14 @@ export function assertAdmin(user: SessionUser) {
 
 /**
  * Condición SQL que limita una columna restaurant_id a lo que el usuario puede ver.
- * Devuelve undefined para admins (sin restricción).
+ * Siempre restringe: el administrador lo es de SU cadena, no de todo el sistema.
  */
-export function restaurantScope(user: SessionUser, column: PgColumn): SQL | undefined {
-  if (user.restaurantIds === null) return undefined;
+export function restaurantScope(user: SessionUser, column: PgColumn): SQL {
   if (user.restaurantIds.length === 0) return sql`false`;
   return inArray(column, user.restaurantIds);
+}
+
+/** Condición SQL que limita una columna organization_id a la cadena del usuario. */
+export function organizationScope(user: SessionUser, column: PgColumn): SQL {
+  return eq(column, user.organizationId);
 }

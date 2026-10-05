@@ -20,6 +20,8 @@
     "db:studio": "dotenv -- drizzle-kit studio",
     "create-admin": "dotenv -- tsx scripts/create-admin.ts",
     "invite:admin": "dotenv -- tsx scripts/create-invite.ts",
+    "invite:org": "dotenv -- tsx scripts/invite-org.ts",
+    "org:delete": "dotenv -- tsx scripts/delete-org.ts",
     "prepare": "husky || true"
   },
   "dependencies": {

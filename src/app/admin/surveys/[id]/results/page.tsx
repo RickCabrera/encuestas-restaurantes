@@ -4,12 +4,11 @@ import { DistributionChart, NpsColumns } from "@/components/results/charts";
 import { FilterBar } from "@/components/results/filter-bar";
 import { EmptyState, PageHeader } from "@/components/ui/primitives";
 import { requireUser } from "@/lib/auth";
-import { canAccessRestaurant } from "@/lib/authz";
 import { dayInTz, formatDateTime } from "@/lib/dates";
 import { filtersToQuery, parseFilters } from "@/lib/filters";
-import { isUuid } from "@/lib/ids";
 import { average, formatAvg, formatNps, nps, plural } from "@/lib/metrics";
-import { getFirstResponseAt, getSurveyForResults, getSurveyQuestionResults } from "@/lib/queries/results";
+import { getFirstResponseAt, getSurveyQuestionResults } from "@/lib/queries/results";
+import { getAccessibleSurvey } from "@/lib/queries/surveys";
 import { QUESTION_TYPE_LABELS } from "@/lib/survey-template";
 
 export const metadata = { title: "Resultados por pregunta" };
@@ -23,12 +22,11 @@ export default async function SurveyResultsPage({
 }) {
   const user = await requireUser();
   const { id } = await params;
-  if (!isUuid(id)) notFound();
-  const survey = await getSurveyForResults(id);
-  if (!survey || !canAccessRestaurant(user, survey.restaurantId)) notFound();
+  const survey = await getAccessibleSurvey(user, id);
+  if (!survey) notFound();
   // Por defecto, todo el historial de la encuesta (desde su primera respuesta).
   const sp = await searchParams;
-  const first = await getFirstResponseAt(id);
+  const first = await getFirstResponseAt(id, user);
   const defaultFrom = dayInTz(first ?? survey.publishedAt ?? survey.createdAt);
   const given = Object.fromEntries(Object.entries(sp).filter(([, v]) => v !== ""));
   const f = await parseFilters({ from: defaultFrom, ...given, restaurant: "all", survey: id }, user);

@@ -1,13 +1,14 @@
 "use server";
 
-import { and, count, eq, inArray, max, sql } from "drizzle-orm";
+import { and, count, eq, max, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
-import { questions, responses, restaurants, surveys } from "@/db/schema";
+import { questions, responses, surveys } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, type SessionUser } from "@/lib/auth";
+import { canAccessRestaurant, restaurantScope } from "@/lib/authz";
 import { isUuid } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { canDeleteSurvey, canEditSurvey } from "@/lib/survey-rules";
@@ -27,11 +28,17 @@ async function responseCount(surveyId: string) {
   return row.n;
 }
 
-async function loadSurvey(id: string) {
-  if (!isUuid(id)) throw new Error("Encuesta no encontrada");
-  const s = await db.query.surveys.findFirst({ where: eq(surveys.id, id) });
-  if (!s) throw new Error("Encuesta no encontrada");
-  return s;
+const NOT_FOUND: ActionState = { error: "Encuesta no encontrada" };
+
+/** Condición para tocar una encuesta: ese id y que su restaurante sea de la cadena del administrador. */
+function ownSurvey(admin: SessionUser, id: string) {
+  return and(eq(surveys.id, id), restaurantScope(admin, surveys.restaurantId));
+}
+
+/** La encuesta, o undefined si no existe o es de otra cadena (para el que pregunta es lo mismo). */
+async function loadSurvey(admin: SessionUser, id: string) {
+  if (!isUuid(id)) return undefined;
+  return db.query.surveys.findFirst({ where: ownSurvey(admin, id) });
 }
 
 function toQuestionRows(surveyId: string, qs: SurveyInput["questions"]) {
@@ -53,12 +60,11 @@ const createSchema = z.object({
 });
 
 export async function createSurveyAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = createSchema.safeParse(Object.fromEntries(fd));
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
   const { restaurantId, title, template } = parsed.data;
-  const r = await db.query.restaurants.findFirst({ where: eq(restaurants.id, restaurantId), columns: { id: true } });
-  if (!r) return { fieldErrors: { restaurantId: ["Restaurante no encontrado"] } };
+  if (!canAccessRestaurant(admin, restaurantId)) return { fieldErrors: { restaurantId: ["Restaurante no encontrado"] } };
 
   const id = await db.transaction(async (tx) => {
     const [s] = await tx
@@ -83,8 +89,9 @@ export async function createSurveyAction(_prev: ActionState, fd: FormData): Prom
 }
 
 export async function saveSurveyAction(id: string, input: SurveyInput): Promise<ActionState> {
-  await requireAdmin();
-  const survey = await loadSurvey(id);
+  const admin = await requireAdmin();
+  const survey = await loadSurvey(admin, id);
+  if (!survey) return NOT_FOUND;
   if (!canEditSurvey(await responseCount(id))) {
     return { error: "Esta encuesta ya tiene respuestas y no se puede editar. Duplícala como nueva versión." };
   }
@@ -108,8 +115,9 @@ export async function saveSurveyAction(id: string, input: SurveyInput): Promise<
 }
 
 export async function publishSurveyAction(id: string): Promise<ActionState> {
-  await requireAdmin();
-  const survey = await loadSurvey(id);
+  const admin = await requireAdmin();
+  const survey = await loadSurvey(admin, id);
+  if (!survey) return NOT_FOUND;
   const [{ n }] = await db.select({ n: count() }).from(questions).where(eq(questions.surveyId, id));
   if (n === 0) return { error: "Agrega al menos una pregunta antes de publicar." };
   await db.transaction(async (tx) => {
@@ -128,25 +136,27 @@ export async function publishSurveyAction(id: string): Promise<ActionState> {
 }
 
 export async function archiveSurveyAction(id: string): Promise<ActionState> {
-  await requireAdmin();
-  await loadSurvey(id);
-  await db.update(surveys).set({ status: "ARCHIVED", archivedAt: new Date() }).where(eq(surveys.id, id));
+  const admin = await requireAdmin();
+  if (!(await loadSurvey(admin, id))) return NOT_FOUND;
+  await db.update(surveys).set({ status: "ARCHIVED", archivedAt: new Date() }).where(ownSurvey(admin, id));
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Encuesta archivada." };
 }
 
 /** Copia la encuesta como borrador en uno o varios restaurantes. */
 export async function duplicateSurveyAction(id: string, restaurantIds: string[]): Promise<ActionState & { newId?: string }> {
-  await requireAdmin();
-  const source = await db.query.surveys.findFirst({
-    where: eq(surveys.id, id),
-    with: { questions: { orderBy: (q, { asc }) => asc(q.position) } },
-  });
-  if (!source) return { error: "Encuesta no encontrada" };
-  const targets = restaurantIds.filter(isUuid);
+  const admin = await requireAdmin();
+  const source = isUuid(id)
+    ? await db.query.surveys.findFirst({
+        where: ownSurvey(admin, id),
+        with: { questions: { orderBy: (q, { asc }) => asc(q.position) } },
+      })
+    : undefined;
+  if (!source) return NOT_FOUND;
+  const targets = [...new Set(restaurantIds.filter(isUuid))];
   if (targets.length === 0) return { error: "Elige al menos un restaurante." };
-  const valid = await db.select({ id: restaurants.id }).from(restaurants).where(inArray(restaurants.id, targets));
-  if (valid.length !== targets.length) return { error: "Algún restaurante no existe." };
+  // Solo se copia a restaurantes de la misma cadena.
+  if (!targets.every((t) => canAccessRestaurant(admin, t))) return { error: "Algún restaurante no existe." };
 
   const created = await db.transaction(async (tx) => {
     const ids: string[] = [];
@@ -188,12 +198,13 @@ export async function duplicateSurveyAction(id: string, restaurantIds: string[])
 }
 
 export async function deleteSurveyAction(id: string): Promise<ActionState> {
-  await requireAdmin();
-  const survey = await loadSurvey(id);
+  const admin = await requireAdmin();
+  const survey = await loadSurvey(admin, id);
+  if (!survey) return NOT_FOUND;
   if (!canDeleteSurvey(survey.status, await responseCount(id))) {
     return { error: "Solo se pueden eliminar borradores sin respuestas." };
   }
-  await db.delete(surveys).where(eq(surveys.id, id));
+  await db.delete(surveys).where(ownSurvey(admin, id));
   revalidatePath("/admin/surveys");
   redirect("/admin/surveys");
 }

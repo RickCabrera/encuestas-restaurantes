@@ -8,7 +8,8 @@ import { z } from "zod";
 import { db } from "@/db";
 import { restaurants } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, type SessionUser } from "@/lib/auth";
+import { isUuid } from "@/lib/ids";
 import { kioskPinHash } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 import { SLUG_REGEX, slugify } from "@/lib/slug";
@@ -44,6 +45,14 @@ async function readLogo(formData: FormData): Promise<{ data: Buffer; mime: strin
   return { data: Buffer.from(await file.arrayBuffer()), mime: file.type };
 }
 
+/** Condición para tocar un restaurante: ese id y que sea de la cadena del administrador. */
+function ownRestaurant(admin: SessionUser, id: string) {
+  return and(eq(restaurants.id, id), eq(restaurants.organizationId, admin.organizationId));
+}
+
+const NOT_FOUND: ActionState = { error: "Restaurante no encontrado." };
+
+// El slug es único en todo el sistema (la dirección /r/[slug] es pública), no solo en la cadena.
 async function slugTaken(slug: string, exceptId?: string) {
   const row = await db.query.restaurants.findFirst({
     where: exceptId ? and(eq(restaurants.slug, slug), ne(restaurants.id, exceptId)) : eq(restaurants.slug, slug),
@@ -64,7 +73,7 @@ function parse(formData: FormData) {
 }
 
 export async function createRestaurantAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = parse(formData);
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
   const pin = pinSchema.safeParse(formData.get("kioskPin"));
@@ -80,6 +89,7 @@ export async function createRestaurantAction(_prev: ActionState, formData: FormD
   const id = randomUUID();
   await db.insert(restaurants).values({
     id,
+    organizationId: admin.organizationId,
     ...parsed.data,
     address: parsed.data.address || null,
     slug,
@@ -92,7 +102,11 @@ export async function createRestaurantAction(_prev: ActionState, formData: FormD
 }
 
 export async function updateRestaurantAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const own = isUuid(id)
+    ? await db.query.restaurants.findFirst({ where: ownRestaurant(admin, id), columns: { id: true } })
+    : undefined;
+  if (!own) return NOT_FOUND;
   const parsed = parse(formData);
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
 
@@ -125,15 +139,17 @@ export async function updateRestaurantAction(id: string, _prev: ActionState, for
           ? { logoData: null, logoMime: null, logoUpdatedAt: new Date() }
           : {}),
     })
-    .where(eq(restaurants.id, id));
+    .where(ownRestaurant(admin, id));
   revalidatePath("/admin", "layout");
   return { ok: true, message: "Cambios guardados." };
 }
 
 /** Desactivar en lugar de borrar: se conservan encuestas y respuestas. */
 export async function setRestaurantActiveAction(id: string, active: boolean) {
-  await requireAdmin();
-  await db.update(restaurants).set({ active }).where(eq(restaurants.id, id));
+  const admin = await requireAdmin();
+  if (!isUuid(id)) return;
+  const rows = await db.update(restaurants).set({ active }).where(ownRestaurant(admin, id)).returning({ id: restaurants.id });
+  if (rows.length === 0) return;
   logger.info("restaurant.active_changed", { restaurantId: id, active });
   revalidatePath("/admin", "layout");
 }

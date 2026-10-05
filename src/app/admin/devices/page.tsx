@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { devices, restaurants } from "@/db/schema";
 import { EmptyState, PageHeader } from "@/components/ui/primitives";
 import { requireAdmin } from "@/lib/auth";
+import { restaurantScope } from "@/lib/authz";
 import { formatDateTime } from "@/lib/dates";
 import { parseFilters } from "@/lib/filters";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
@@ -43,7 +44,13 @@ export default async function DevicesPage({ searchParams }: { searchParams: Prom
     })
     .from(devices)
     .innerJoin(restaurants, eq(restaurants.id, devices.restaurantId))
-    .where(and(eq(devices.active, true), f.restaurantId ? eq(devices.restaurantId, f.restaurantId) : undefined))
+    .where(
+      and(
+        restaurantScope(admin, devices.restaurantId),
+        eq(devices.active, true),
+        f.restaurantId ? eq(devices.restaurantId, f.restaurantId) : undefined,
+      ),
+    )
     .orderBy(asc(restaurants.name), asc(devices.name));
   const kioskUrl = `${await appUrl()}/kiosk`;
 

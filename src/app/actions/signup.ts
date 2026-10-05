@@ -6,6 +6,7 @@ import type { ActionState } from "@/lib/action-state";
 import { createSession } from "@/lib/auth";
 import { registerWithInvite } from "@/lib/invites";
 import { logger } from "@/lib/logger";
+import { ORG_NAME_MAX, ORG_NAME_MIN } from "@/lib/orgs";
 import { passwordSchema } from "@/lib/password-rules";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/request";
@@ -13,6 +14,8 @@ import { clientIp } from "@/lib/request";
 const signupSchema = z
   .object({
     codigo: z.string(),
+    // Solo se pide (y se exige) con un enlace de cadena nueva; eso lo decide registerWithInvite.
+    orgName: z.string().trim().max(ORG_NAME_MAX, `Máximo ${ORG_NAME_MAX} caracteres`),
     name: z.string().trim().min(2, "Escribe tu nombre").max(80, "Máximo 80 caracteres"),
     email: z.email("Escribe un correo válido").transform((v) => v.toLowerCase().trim()),
     password: passwordSchema,
@@ -22,7 +25,11 @@ const signupSchema = z
 
 /** Registro con enlace de invitación de un solo uso (no hay registro público). */
 export async function signupAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const values = { name: String(formData.get("name") ?? ""), email: String(formData.get("email") ?? "") };
+  const values = {
+    orgName: String(formData.get("orgName") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+  };
   try {
     return await signupActionInner(formData, values);
   } catch (e) {
@@ -36,6 +43,7 @@ export async function signupAction(_prev: ActionState, formData: FormData): Prom
 async function signupActionInner(formData: FormData, values: Record<string, string>): Promise<ActionState> {
   const parsed = signupSchema.safeParse({
     codigo: String(formData.get("codigo") ?? ""),
+    orgName: values.orgName,
     name: values.name,
     email: values.email.trim(),
     password: String(formData.get("password") ?? ""),
@@ -50,15 +58,29 @@ async function signupActionInner(formData: FormData, values: Record<string, stri
     return { error: `Demasiados intentos. Intenta de nuevo en ${Math.ceil(limited.retryAfterSec / 60)} min.`, values };
   }
 
-  const result = await registerWithInvite({ token: d.codigo, name: d.name, email: d.email, password: d.password });
+  const result = await registerWithInvite({
+    token: d.codigo,
+    name: d.name,
+    email: d.email,
+    password: d.password,
+    orgName: d.orgName,
+  });
   if (!result.ok) {
     if (result.reason === "email") return { fieldErrors: { email: ["Ya existe una cuenta con ese correo"] }, values };
+    if (result.reason === "orgName") {
+      return {
+        fieldErrors: { orgName: [`Escribe el nombre de tu cadena o negocio (mínimo ${ORG_NAME_MIN} caracteres)`] },
+        values,
+      };
+    }
+    if (result.reason === "orgNameTaken")
+      return { fieldErrors: { orgName: ["Ese nombre no está disponible. Elige otro."] }, values };
     logger.warn("auth.signup_invalid_invite", { ip });
     // La página vuelve a validar el código y muestra el aviso en lugar del formulario.
     redirect(`/registro?codigo=${encodeURIComponent(d.codigo)}`);
   }
 
   await createSession(result.user);
-  logger.info("auth.signup", { userId: result.user.id, role: result.user.role });
+  logger.info("auth.signup", { userId: result.user.id, role: result.user.role, organizationId: result.user.organizationId });
   redirect("/admin");
 }

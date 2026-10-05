@@ -6,7 +6,7 @@ import { dayInTz } from "@/lib/dates";
 import type { Filters } from "@/lib/filters";
 import { rateLimit } from "@/lib/rate-limit";
 import { submitResponse } from "@/lib/submit-response";
-import { answersFor, createRestaurantWithSurvey, resetDb } from "./helpers";
+import { adminSessionOver, answersFor, createRestaurantWithSurvey, resetDb } from "./helpers";
 
 // parseFilters/responseWhere importan next/headers; aquí solo se usa responseWhere.
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }), headers: async () => new Headers() }));
@@ -32,8 +32,6 @@ const filters = (over: Partial<Filters> = {}): Filters => ({
   ...over,
 });
 
-const admin: SessionUser = { id: "a", name: "A", email: "a@x", role: "ADMIN", notifyLowScores: false, restaurantIds: null };
-
 describe("alcance de gerentes (autorización en backend)", () => {
   it("un gerente solo ve datos de sus restaurantes", async () => {
     const a = await createRestaurantWithSurvey("a");
@@ -49,6 +47,7 @@ describe("alcance de gerentes (autorización en backend)", () => {
         { channel: "QR" },
       );
 
+    const admin = await adminSessionOver([a.restaurant.id, b.restaurant.id]);
     const manager: SessionUser = { ...admin, role: "MANAGER", restaurantIds: [a.restaurant.id] };
     expect((await getSummary(filters(), admin)).responses).toBe(5);
     expect((await getSummary(filters(), manager)).responses).toBe(3);
@@ -71,7 +70,7 @@ describe("indicadores", () => {
       submitResponse({ id: randomUUID(), surveyId: a.survey.id, answers: answersFor(m, over) }, { channel: "QR" });
     await send({ [m.FOOD]: 5, [m.SERVICE]: 4, [m.RECOMMEND]: 10, [m.FIRST_VISIT]: true, [m.CAPTAIN_VISIT]: true });
     await send({ [m.FOOD]: 3, [m.SERVICE]: 2, [m.RECOMMEND]: 5, [m.FIRST_VISIT]: false, [m.CAPTAIN_VISIT]: false });
-    const s = await getSummary(filters(), admin);
+    const s = await getSummary(filters(), await adminSessionOver([a.restaurant.id]));
     expect(s).toMatchObject({
       responses: 2,
       food: 4,

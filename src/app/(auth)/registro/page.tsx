@@ -36,11 +36,13 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
     <>
       <h1 className="text-[28px] font-semibold">Crea tu cuenta</h1>
       <p className="mt-1 mb-8 text-ink-soft">
-        {invite.role === "ADMIN"
-          ? "Con ella entrarás al panel como administrador."
-          : "Con ella entrarás al panel para ver los resultados de tus restaurantes."}
+        {invite.kind === "NEW_ORG"
+          ? "Da de alta tu cadena o negocio. Serás su administrador."
+          : invite.role === "ADMIN"
+            ? "Con ella entrarás al panel como administrador."
+            : "Con ella entrarás al panel para ver los resultados de tus restaurantes."}
       </p>
-      <SignupForm codigo={token} />
+      <SignupForm codigo={token} newOrg={invite.kind === "NEW_ORG"} />
     </>
   );
 }

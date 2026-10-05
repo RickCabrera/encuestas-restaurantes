@@ -5,7 +5,10 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { userRestaurants, users, type User } from "@/db/schema";
+import { users, type User } from "@/db/schema";
+import { buildSessionUser, type SessionUser } from "./session-user";
+
+export type { SessionUser };
 
 const COOKIE = "session";
 
@@ -43,11 +46,6 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
-export type SessionUser = Pick<User, "id" | "name" | "email" | "role" | "notifyLowScores"> & {
-  /** null = acceso a todos los restaurantes (admin). */
-  restaurantIds: string[] | null;
-};
-
 /** Usuario de la sesión actual (memoizado por request). */
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
@@ -58,22 +56,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     if (!payload.sub) return null;
     const user = await db.query.users.findFirst({ where: eq(users.id, payload.sub) });
     if (!user || !user.active || user.sessionVersion !== payload.sv) return null;
-    let restaurantIds: string[] | null = null;
-    if (user.role !== "ADMIN") {
-      const rows = await db
-        .select({ id: userRestaurants.restaurantId })
-        .from(userRestaurants)
-        .where(eq(userRestaurants.userId, user.id));
-      restaurantIds = rows.map((r) => r.id);
-    }
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      notifyLowScores: user.notifyLowScores,
-      restaurantIds,
-    };
+    return await buildSessionUser(user);
   } catch {
     return null;
   }

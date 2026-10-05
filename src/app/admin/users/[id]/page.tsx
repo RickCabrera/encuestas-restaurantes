@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateUserAction } from "@/app/actions/users";
@@ -16,7 +16,10 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   const admin = await requireAdmin();
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const user = await db.query.users.findFirst({ where: eq(users.id, id), with: { restaurants: true } });
+  const user = await db.query.users.findFirst({
+    where: and(eq(users.id, id), eq(users.organizationId, admin.organizationId)),
+    with: { restaurants: true },
+  });
   if (!user) notFound();
   const restaurants = await listAccessibleRestaurants(admin, { includeInactive: true });
   return (

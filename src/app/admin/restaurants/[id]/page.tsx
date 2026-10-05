@@ -8,8 +8,8 @@ import { buttonClass, ButtonLink } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Badge, Notice, PageHeader } from "@/components/ui/primitives";
 import { requireAdmin } from "@/lib/auth";
-import { isUuid, logoUrl } from "@/lib/ids";
-import { getRestaurant } from "@/lib/queries/restaurants";
+import { logoUrl } from "@/lib/ids";
+import { getAccessibleRestaurant } from "@/lib/queries/restaurants";
 import { appUrl } from "@/lib/request";
 import { RestaurantForm } from "../restaurant-form";
 import { TableQrForm } from "./table-qr-form";
@@ -23,10 +23,10 @@ export default async function RestaurantPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ created?: string }>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { id } = await params;
   const { created } = await searchParams;
-  const r = isUuid(id) ? await getRestaurant(id) : undefined;
+  const r = await getAccessibleRestaurant(admin, id);
   if (!r) notFound();
   const base = await appUrl();
   const activeSurvey = await db.query.surveys.findFirst({

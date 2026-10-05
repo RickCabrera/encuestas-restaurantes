@@ -48,7 +48,7 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
 
   const survey = await db.query.surveys.findFirst({
     where: eq(surveys.id, input.surveyId),
-    with: { questions: true, restaurant: { columns: { id: true, name: true, active: true } } },
+    with: { questions: true, restaurant: { columns: { id: true, name: true, active: true, organizationId: true } } },
   });
   if (!survey || survey.status === "DRAFT") throw new SubmitError("La encuesta no está disponible", 404);
   if (!survey.restaurant.active) throw new SubmitError("El restaurante no está recibiendo encuestas", 403);
@@ -137,6 +137,7 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
     alert: lowScore
       ? () =>
           sendLowScoreAlert({
+            organizationId: survey.restaurant.organizationId,
             restaurantId: survey.restaurantId,
             restaurantName: survey.restaurant.name,
             responseId: input.id,
@@ -152,23 +153,27 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
 }
 
 async function sendLowScoreAlert(p: {
+  organizationId: string;
   restaurantId: string;
   restaurantName: string;
   responseId: string;
   submittedAt: Date;
   lines: { question: string; value: string; position: number }[];
 }) {
-  // Admins que quieren alertas + gerentes asignados a ese restaurante que las quieren.
+  // Admins de la cadena del restaurante que quieren alertas + gerentes asignados a ese restaurante
+  // que las quieren. Nunca sale un correo a un usuario de otra cadena.
+  const sameOrg = eq(users.organizationId, p.organizationId);
   const admins = await db
     .select({ email: users.email })
     .from(users)
-    .where(and(eq(users.role, "ADMIN"), eq(users.active, true), eq(users.notifyLowScores, true)));
+    .where(and(sameOrg, eq(users.role, "ADMIN"), eq(users.active, true), eq(users.notifyLowScores, true)));
   const managers = await db
     .select({ email: users.email })
     .from(users)
     .innerJoin(userRestaurants, eq(userRestaurants.userId, users.id))
     .where(
       and(
+        sameOrg,
         eq(userRestaurants.restaurantId, p.restaurantId),
         eq(users.role, "MANAGER"),
         eq(users.active, true),

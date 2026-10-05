@@ -27,7 +27,7 @@ const groups = [
   },
 ];
 
-export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
+export function Sidebar({ isAdmin, organizationName }: { isAdmin: boolean; organizationName: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -68,7 +68,10 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   return (
     <>
       <div className="flex items-center justify-between bg-basil-dark px-5 py-3 text-white lg:hidden">
-        <span className="font-display text-lg font-semibold">Sobremesa</span>
+        <span className="min-w-0">
+          <span className="block font-display text-lg font-semibold">Sobremesa</span>
+          <span className="block truncate text-[13px] text-white/60">{organizationName}</span>
+        </span>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -86,7 +89,12 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
         </div>
       ) : null}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-basil-dark px-3 py-6 lg:flex">
-        <p className="mb-10 px-3 font-display text-xl font-semibold text-white">Sobremesa</p>
+        <div className="mb-10 px-3">
+          <p className="font-display text-xl font-semibold text-white">Sobremesa</p>
+          <p className="mt-1 truncate text-[13px] text-white/60" title={organizationName}>
+            {organizationName}
+          </p>
+        </div>
         {nav}
       </aside>
     </>

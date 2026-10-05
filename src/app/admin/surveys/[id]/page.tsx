@@ -2,16 +2,15 @@ import { count, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { responses, surveys } from "@/db/schema";
+import { responses } from "@/db/schema";
 import { ButtonLink } from "@/components/ui/button";
 import { Notice, PageHeader } from "@/components/ui/primitives";
 import { StatusBadge } from "@/components/survey/status-badge";
 import { requireUser } from "@/lib/auth";
-import { canAccessRestaurant } from "@/lib/authz";
 import { formatDateTime } from "@/lib/dates";
 import { plural } from "@/lib/metrics";
-import { isUuid } from "@/lib/ids";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
+import { getAccessibleSurvey } from "@/lib/queries/surveys";
 import { canDeleteSurvey, canEditSurvey } from "@/lib/survey-rules";
 import { METRIC_LABELS, QUESTION_TYPE_LABELS } from "@/lib/survey-template";
 import { SurveyActions } from "./survey-actions";
@@ -22,15 +21,8 @@ export const metadata = { title: "Encuesta" };
 export default async function SurveyPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  if (!isUuid(id)) notFound();
-  const survey = await db.query.surveys.findFirst({
-    where: eq(surveys.id, id),
-    with: {
-      questions: { orderBy: (q, { asc }) => asc(q.position) },
-      restaurant: { columns: { id: true, name: true } },
-    },
-  });
-  if (!survey || !canAccessRestaurant(user, survey.restaurantId)) notFound();
+  const survey = await getAccessibleSurvey(user, id);
+  if (!survey) notFound();
   const [{ n: responseCount }] = await db.select({ n: count() }).from(responses).where(eq(responses.surveyId, id));
   const isAdmin = user.role === "ADMIN";
   const editable = isAdmin && canEditSurvey(responseCount);

@@ -1,10 +1,12 @@
 import "server-only";
 import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { answers, devices, questions, responses, restaurants, surveys } from "@/db/schema";
+import { answers, devices, questions, responses, restaurants } from "@/db/schema";
 import type { SessionUser } from "@/lib/auth";
+import { restaurantScope } from "@/lib/authz";
 import { addDays, APP_TIMEZONE } from "@/lib/dates";
 import { type Filters, responseWhere } from "@/lib/filters";
+import { isUuid } from "@/lib/ids";
 
 export type MetricSummary = {
   responses: number;
@@ -217,9 +219,11 @@ export async function listResponses(f: Filters, user: SessionUser) {
   return { total, rows };
 }
 
-export async function getResponseDetail(id: string) {
+/** Detalle de una respuesta: null si no existe o no es de un restaurante que el usuario pueda ver. */
+export async function getResponseDetail(id: string, user: SessionUser) {
+  if (!isUuid(id)) return null;
   const r = await db.query.responses.findFirst({
-    where: eq(responses.id, id),
+    where: and(eq(responses.id, id), restaurantScope(user, responses.restaurantId)),
     with: {
       restaurant: { columns: { id: true, name: true } },
       device: { columns: { name: true } },
@@ -284,21 +288,11 @@ export async function listComments(f: Filters, user: SessionUser) {
   return { total, rows };
 }
 
-export async function getSurveyForResults(id: string) {
-  return db.query.surveys.findFirst({
-    where: eq(surveys.id, id),
-    with: {
-      questions: { orderBy: (q, { asc }) => asc(q.position) },
-      restaurant: { columns: { id: true, name: true } },
-    },
-  });
-}
-
 /** Fecha (día local) de la primera respuesta de una encuesta, o null si no tiene. */
-export async function getFirstResponseAt(surveyId: string) {
+export async function getFirstResponseAt(surveyId: string, user: SessionUser) {
   const [row] = await db
     .select({ first: sql<Date | null>`min(${responses.submittedAt})` })
     .from(responses)
-    .where(eq(responses.surveyId, surveyId));
+    .where(and(eq(responses.surveyId, surveyId), restaurantScope(user, responses.restaurantId)));
   return row?.first ? new Date(row.first) : null;
 }

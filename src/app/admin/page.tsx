@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TrendChart } from "@/components/results/charts";
 import { FilterBar } from "@/components/results/filter-bar";
 import { KpiStrip } from "@/components/results/kpi-strip";
+import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, Notice, PageHeader } from "@/components/ui/primitives";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime, formatDay } from "@/lib/dates";
@@ -24,14 +25,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <>
         <PageHeader title="Resumen" />
         <EmptyState
-          title={user.role === "ADMIN" ? "Empieza agregando un restaurante" : "Aún no tienes restaurantes asignados"}
-          action={
-            user.role === "ADMIN" ? (
-              <Link href="/admin/restaurants/new" className="link">
-                Agregar restaurante
-              </Link>
-            ) : null
-          }
+          title={user.role === "ADMIN" ? "Empieza creando tu primer restaurante" : "Aún no tienes restaurantes asignados"}
+          action={user.role === "ADMIN" ? <ButtonLink href="/admin/restaurants/new">Crear restaurante</ButtonLink> : null}
         >
           {user.role === "ADMIN"
             ? "Después crea su encuesta, vincula una tablet o imprime su QR, y aquí verás los resultados."

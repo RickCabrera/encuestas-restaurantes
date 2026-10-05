@@ -1,4 +1,4 @@
-import { and, asc, gt, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { cancelInviteAction } from "@/app/actions/invites";
 import { setUserActiveAction } from "@/app/actions/users";
@@ -18,13 +18,18 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const me = await requireAdmin();
   const { saved } = await searchParams;
   const rows = await db.query.users.findMany({
+    where: eq(users.organizationId, me.organizationId),
     orderBy: asc(users.name),
     with: { restaurants: { with: { restaurant: { columns: { name: true } } } } },
   });
   const restaurants = await listAccessibleRestaurants(me, { includeInactive: true });
   const restaurantName = new Map(restaurants.map((r) => [r.id, r.name]));
   const invites = await db.query.signupInvites.findMany({
-    where: and(isNull(signupInvites.usedAt), gt(signupInvites.expiresAt, new Date())),
+    where: and(
+      eq(signupInvites.organizationId, me.organizationId),
+      isNull(signupInvites.usedAt),
+      gt(signupInvites.expiresAt, new Date()),
+    ),
     orderBy: asc(signupInvites.createdAt),
   });
 

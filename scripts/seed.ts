@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../src/db";
 import * as s from "../src/db/schema";
 import { kioskPinHash } from "../src/lib/crypto";
+import { getOrCreateDemoOrg } from "../src/lib/orgs";
 import { isLowScore, type NormalizedAnswer } from "../src/lib/survey-rules";
 import { BASE_TEMPLATE, DEFAULT_CLOSING, DEFAULT_WELCOME } from "../src/lib/survey-template";
 
@@ -35,12 +36,16 @@ async function main() {
 
   console.log("Limpiando tablas…");
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, restaurants, users CASCADE`,
+    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, restaurants, users, organizations CASCADE`,
   );
+
+  // Todo lo del seed vive en la cadena "Demo".
+  const demo = await getOrCreateDemoOrg();
 
   const [admin] = await db
     .insert(s.users)
     .values({
+      organizationId: demo.id,
       name: "Administrador",
       email: adminEmail.toLowerCase(),
       passwordHash: await bcrypt.hash(adminPassword, 10),
@@ -59,7 +64,7 @@ async function main() {
     const id = randomUUID();
     const [row] = await db
       .insert(s.restaurants)
-      .values({ id, ...r, kioskPinHash: kioskPinHash(id, "1234") })
+      .values({ id, organizationId: demo.id, ...r, kioskPinHash: kioskPinHash(id, "1234") })
       .returning();
     restaurants.push(row);
   }
@@ -67,6 +72,7 @@ async function main() {
   const [manager] = await db
     .insert(s.users)
     .values({
+      organizationId: demo.id,
       name: "Gerente Centro",
       email: "gerente@demo.com",
       passwordHash: await bcrypt.hash("Gerente12345!", 10),
@@ -137,7 +143,7 @@ async function main() {
     }
   }
 
-  console.log("Listo.");
+  console.log(`Listo. Cadena: ${demo.name}`);
   console.log(`  Admin:   ${admin.email} / ${adminPassword}`);
   console.log(`  Gerente: gerente@demo.com / Gerente12345!  (solo ${restaurants[0].name})`);
   console.log(`  PIN de kiosko: 1234`);

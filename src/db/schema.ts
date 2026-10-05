@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -34,41 +35,69 @@ export const questionMetric = pgEnum("question_metric", [
   "COMMENT",
 ]);
 export const responseChannel = pgEnum("response_channel", ["KIOSK", "QR"]);
+/** USER: cuenta dentro de una cadena que ya existe. NEW_ORG: da de alta una cadena nueva con su administrador. */
+export const inviteKind = pgEnum("invite_kind", ["USER", "NEW_ORG"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 };
 
-export const users = pgTable("users", {
+/**
+ * Cadena (organización). Todo lo demás cuelga de una: usuarios, restaurantes e invitaciones
+ * directamente; encuestas, preguntas, tablets y respuestas a través de su restaurante.
+ */
+export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: userRole("role").notNull().default("MANAGER"),
-  active: boolean("active").notNull().default(true),
-  notifyLowScores: boolean("notify_low_scores").notNull().default(false),
-  /** Se incrementa al cambiar la contraseña para invalidar sesiones previas. */
-  sessionVersion: integer("session_version").notNull().default(1),
   ...timestamps,
 });
 
-export const restaurants = pgTable("restaurants", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
-  address: text("address"),
-  active: boolean("active").notNull().default(true),
-  primaryColor: text("primary_color").notNull().default("#2F6B4F"),
-  kioskPinHash: text("kiosk_pin_hash").notNull(),
-  /** Segundos que se muestra el mensaje de cierre antes de volver a la bienvenida. */
-  kioskResetSeconds: integer("kiosk_reset_seconds").notNull().default(8),
-  /** Segundos de inactividad para descartar una encuesta a medias. */
-  kioskIdleSeconds: integer("kiosk_idle_seconds").notNull().default(60),
-  logoData: bytea("logo_data"),
-  logoMime: text("logo_mime"),
-  logoUpdatedAt: timestamp("logo_updated_at", { withTimezone: true }),
-  ...timestamps,
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    name: text("name").notNull(),
+    /** Único en todo el sistema, no por cadena: el login no pregunta la cadena. */
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    role: userRole("role").notNull().default("MANAGER"),
+    active: boolean("active").notNull().default(true),
+    notifyLowScores: boolean("notify_low_scores").notNull().default(false),
+    /** Se incrementa al cambiar la contraseña para invalidar sesiones previas. */
+    sessionVersion: integer("session_version").notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [index("users_organization_idx").on(t.organizationId)],
+);
+
+export const restaurants = pgTable(
+  "restaurants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    name: text("name").notNull(),
+    /** Único en todo el sistema, no por cadena: /r/[slug] es público. */
+    slug: text("slug").notNull().unique(),
+    address: text("address"),
+    active: boolean("active").notNull().default(true),
+    primaryColor: text("primary_color").notNull().default("#2F6B4F"),
+    kioskPinHash: text("kiosk_pin_hash").notNull(),
+    /** Segundos que se muestra el mensaje de cierre antes de volver a la bienvenida. */
+    kioskResetSeconds: integer("kiosk_reset_seconds").notNull().default(8),
+    /** Segundos de inactividad para descartar una encuesta a medias. */
+    kioskIdleSeconds: integer("kiosk_idle_seconds").notNull().default(60),
+    logoData: bytea("logo_data"),
+    logoMime: text("logo_mime"),
+    logoUpdatedAt: timestamp("logo_updated_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("restaurants_organization_idx").on(t.organizationId)],
+);
 
 export const userRestaurants = pgTable(
   "user_restaurants",
@@ -202,21 +231,31 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 });
 
 /** Enlaces de registro de un solo uso. No hay registro público: sin invitación no se crea cuenta. */
-export const signupInvites = pgTable("signup_invites", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  /** SHA-256 del token; el token en claro solo existe en el enlace. */
-  tokenHash: text("token_hash").notNull().unique(),
-  role: userRole("role").notNull().default("ADMIN"),
-  /** Restaurantes que verá si el rol es MANAGER. */
-  restaurantIds: uuid("restaurant_ids")
-    .array()
-    .notNull()
-    .default(sql`'{}'::uuid[]`),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  usedAt: timestamp("used_at", { withTimezone: true }),
-  usedByUserId: uuid("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  ...timestamps,
-});
+export const signupInvites = pgTable(
+  "signup_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** SHA-256 del token; el token en claro solo existe en el enlace. */
+    tokenHash: text("token_hash").notNull().unique(),
+    kind: inviteKind("kind").notNull().default("USER"),
+    /** Cadena a la que entra la cuenta. Solo es null en NEW_ORG: esa cadena se crea al registrarse. */
+    organizationId: uuid("organization_id").references(() => organizations.id),
+    role: userRole("role").notNull().default("ADMIN"),
+    /** Restaurantes que verá si el rol es MANAGER. */
+    restaurantIds: uuid("restaurant_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedByUserId: uuid("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("signup_invites_organization_idx").on(t.organizationId),
+    check("signup_invites_org_matches_kind", sql`(${t.kind} = 'NEW_ORG') = (${t.organizationId} is null)`),
+  ],
+);
 
 /** Contadores de ventana fija para rate limiting (funciona en serverless). */
 export const rateLimits = pgTable("rate_limits", {
@@ -227,11 +266,18 @@ export const rateLimits = pgTable("rate_limits", {
 
 // ---------- Relaciones ----------
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+  restaurants: many(restaurants),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  organization: one(organizations, { fields: [users.organizationId], references: [organizations.id] }),
   restaurants: many(userRestaurants),
 }));
 
-export const restaurantsRelations = relations(restaurants, ({ many }) => ({
+export const restaurantsRelations = relations(restaurants, ({ one, many }) => ({
+  organization: one(organizations, { fields: [restaurants.organizationId], references: [organizations.id] }),
   surveys: many(surveys),
   devices: many(devices),
   users: many(userRestaurants),
@@ -274,6 +320,7 @@ export const answersRelations = relations(answers, ({ one }) => ({
   question: one(questions, { fields: [answers.questionId], references: [questions.id] }),
 }));
 
+export type Organization = typeof organizations.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Restaurant = typeof restaurants.$inferSelect;
 export type Survey = typeof surveys.$inferSelect;

@@ -2,9 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, PageHeader } from "@/components/ui/primitives";
 import { requireUser } from "@/lib/auth";
-import { canAccessRestaurant } from "@/lib/authz";
 import { formatDateTime } from "@/lib/dates";
-import { isUuid } from "@/lib/ids";
 import { getResponseDetail } from "@/lib/queries/results";
 import { LOW_NPS_MAX, LOW_RATING_MAX } from "@/lib/survey-rules";
 import { cn } from "@/lib/cn";
@@ -14,9 +12,8 @@ export const metadata = { title: "Respuesta" };
 export default async function ResponseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  if (!isUuid(id)) notFound();
-  const r = await getResponseDetail(id);
-  if (!r || !canAccessRestaurant(user, r.restaurantId)) notFound();
+  const r = await getResponseDetail(id, user);
+  if (!r) notFound();
   const byQuestion = new Map(r.answers.map((a) => [a.questionId, a]));
 
   return (

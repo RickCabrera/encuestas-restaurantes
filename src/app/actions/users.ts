@@ -8,7 +8,8 @@ import { z } from "zod";
 import { db } from "@/db";
 import { userRestaurants, users } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser, type SessionUser } from "@/lib/auth";
+import { canAccessRestaurant } from "@/lib/authz";
 import { isUuid } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 
@@ -30,8 +31,20 @@ function parseUser(fd: FormData) {
   });
 }
 
+/** Condición para tocar a un usuario: ese id y que sea de la cadena del administrador. */
+function ownUser(admin: SessionUser, id: string) {
+  return and(eq(users.id, id), eq(users.organizationId, admin.organizationId));
+}
+
+/** Un gerente solo puede recibir restaurantes de la cadena de quien lo administra. */
+function foreignRestaurant(admin: SessionUser, restaurantIds: string[]) {
+  return restaurantIds.some((r) => !canAccessRestaurant(admin, r));
+}
+
+const BAD_RESTAURANTS: ActionState = { fieldErrors: { restaurantIds: ["Elige restaurantes de la lista"] } };
+
 export async function createUserAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = parseUser(fd);
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
   const password = String(fd.get("password") ?? "");
@@ -39,6 +52,8 @@ export async function createUserAction(_prev: ActionState, fd: FormData): Promis
   const d = parsed.data;
   if (d.role === "MANAGER" && d.restaurantIds.length === 0)
     return { fieldErrors: { restaurantIds: ["Asigna al menos un restaurante"] } };
+  if (d.role === "MANAGER" && foreignRestaurant(admin, d.restaurantIds)) return BAD_RESTAURANTS;
+  // El correo es único en todo el sistema, no solo en la cadena.
   const exists = await db.query.users.findFirst({ where: eq(users.email, d.email), columns: { id: true } });
   if (exists) return { fieldErrors: { email: ["Ya existe un usuario con ese correo"] } };
 
@@ -46,6 +61,7 @@ export async function createUserAction(_prev: ActionState, fd: FormData): Promis
     const [u] = await tx
       .insert(users)
       .values({
+        organizationId: admin.organizationId,
         name: d.name,
         email: d.email,
         role: d.role,
@@ -64,12 +80,15 @@ export async function createUserAction(_prev: ActionState, fd: FormData): Promis
 
 export async function updateUserAction(id: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireAdmin();
+  const target = isUuid(id) ? await db.query.users.findFirst({ where: ownUser(admin, id), columns: { id: true } }) : undefined;
+  if (!target) return { error: "Usuario no encontrado." };
   const parsed = parseUser(fd);
   if (!parsed.success) return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
   const d = parsed.data;
   if (id === admin.id && d.role !== "ADMIN") return { error: "No puedes quitarte el rol de administrador." };
   if (d.role === "MANAGER" && d.restaurantIds.length === 0)
     return { fieldErrors: { restaurantIds: ["Asigna al menos un restaurante"] } };
+  if (d.role === "MANAGER" && foreignRestaurant(admin, d.restaurantIds)) return BAD_RESTAURANTS;
   const clash = await db.query.users.findFirst({
     where: and(eq(users.email, d.email), ne(users.id, id)),
     columns: { id: true },
@@ -89,7 +108,7 @@ export async function updateUserAction(id: string, _prev: ActionState, fd: FormD
         notifyLowScores: d.notifyLowScores,
         ...(password ? { passwordHash: await bcrypt.hash(password, 10), sessionVersion: sql`${users.sessionVersion} + 1` } : {}),
       })
-      .where(eq(users.id, id));
+      .where(ownUser(admin, id));
     await tx.delete(userRestaurants).where(eq(userRestaurants.userId, id));
     if (d.role === "MANAGER") {
       await tx.insert(userRestaurants).values(d.restaurantIds.map((restaurantId) => ({ userId: id, restaurantId })));
@@ -101,11 +120,13 @@ export async function updateUserAction(id: string, _prev: ActionState, fd: FormD
 
 export async function setUserActiveAction(id: string, active: boolean) {
   const admin = await requireAdmin();
-  if (id === admin.id) return;
-  await db
+  if (id === admin.id || !isUuid(id)) return;
+  const rows = await db
     .update(users)
     .set({ active, sessionVersion: sql`${users.sessionVersion} + 1` })
-    .where(eq(users.id, id));
+    .where(ownUser(admin, id))
+    .returning({ id: users.id });
+  if (rows.length === 0) return;
   logger.info("user.active_changed", { userId: id, active });
   revalidatePath("/admin/users");
 }

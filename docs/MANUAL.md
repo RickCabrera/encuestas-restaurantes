@@ -6,10 +6,14 @@ Este manual es para el dueño y los gerentes de los restaurantes.
 
 Abre `https://encuestas.tudominio.com/admin` y entra con tu correo y contraseña. Si la olvidaste, toca **Olvidé mi contraseña** y te llegará un enlace por correo.
 
+Cada cuenta pertenece a una **cadena** (tu negocio). El nombre de tu cadena aparece arriba en la barra lateral. Todo lo que ves y configuras es solo de tu cadena: sus restaurantes, usuarios, encuestas, tablets y respuestas. Nadie de otra cadena puede verlo.
+
 Hay dos tipos de usuario:
 
-- **Administrador:** configura todo y ve todos los restaurantes.
+- **Administrador:** configura todo y ve todos los restaurantes de su cadena.
 - **Gerente:** solo ve los resultados de los restaurantes que se le asignaron.
+
+Si tu cadena es nueva, el resumen te pedirá **crear tu primer restaurante**. Después crea su encuesta y vincula una tablet o imprime su QR.
 
 Arriba a la izquierda está el **selector de restaurante**. Lo que elijas ahí se aplica al resumen, las respuestas y los comentarios, y se recuerda mientras dure tu sesión.
 
@@ -90,3 +94,52 @@ En **Mi cuenta** activa "Recibir un correo cuando llegue una calificación baja"
 ## Usuarios
 
 Solo para administradores. **Configuración → Usuarios → Agregar usuario**: nombre, correo, contraseña inicial, rol y, si es gerente, qué restaurantes puede ver. **Desactivar** cierra su sesión de inmediato.
+
+**Invitar con enlace** genera un enlace de un solo uso (vence en 7 días) para que la persona elija su propio correo y contraseña. La cuenta que se crea con ese enlace queda dentro de tu cadena.
+
+## Cadenas: alta y borrado (para quien opera el sistema)
+
+Esta sección no es para dueños ni gerentes: los comandos se corren en una terminal, dentro de la carpeta del proyecto.
+
+### A qué base de datos apuntan los comandos
+
+Los comandos usan la variable de entorno **`DATABASE_URL`**. Si no la defines, toman la de tu archivo `.env`, que es tu base **local**. Para trabajar sobre **producción**, define `DATABASE_URL` en la terminal con la URL directa de la base de producción (la misma que está en Vercel como `DIRECT_DATABASE_URL`) antes de correr el comando. Lo que definas en la terminal tiene prioridad sobre el `.env`.
+
+`invite:org` necesita además **`APP_URL`**, la dirección pública del sistema, porque con ella arma el enlace.
+
+En PowerShell (Windows):
+
+```powershell
+$env:DATABASE_URL = "<url directa de producción>"
+$env:APP_URL = "https://encuestas.tudominio.com"
+```
+
+En bash (Mac o Linux) se ponen delante del comando: `DATABASE_URL="<url directa de producción>" APP_URL="https://encuestas.tudominio.com" npm run invite:org`.
+
+Las variables de PowerShell duran hasta que cierras esa terminal. Ciérrala al terminar para no seguir apuntando a producción sin querer.
+
+### Dar de alta una cadena nueva
+
+```bash
+npm run invite:org
+```
+
+Imprime un enlace como `https://encuestas.tudominio.com/registro?codigo=…`. Envíaselo al dueño de la cadena nueva.
+
+- Al abrirlo, escribe el **nombre de su cadena o negocio**, su nombre, correo y contraseña. Queda como administrador de esa cadena y entra directo al panel, que estará vacío.
+- El enlace sirve **una sola vez** y vence en **7 días**. Cada vez que corres el comando sale un enlace distinto.
+- El enlace solo se muestra en la terminal. Si se pierde, genera otro.
+
+### Borrar una cadena de prueba
+
+```bash
+npm run org:delete -- "Nombre exacto de la cadena"
+```
+
+- Muestra a qué base de datos apunta y cuántos restaurantes, usuarios, encuestas, tablets, respuestas e invitaciones va a borrar.
+- Pide escribir otra vez el nombre de la cadena. Si no coincide exactamente, no borra nada.
+- Borra todo junto o no borra nada. **No se puede deshacer.**
+- La cadena **Demo** nunca se puede borrar.
+- Si hay dos cadenas con el mismo nombre, no borra ninguna y muestra el id de cada una. Elige una con `npm run org:delete -- --id <id>`.
+
+El nombre es el que aparece arriba en la barra lateral del panel de esa cadena. Respeta mayúsculas, acentos y espacios.

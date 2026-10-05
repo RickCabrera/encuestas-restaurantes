@@ -2,7 +2,7 @@
 
 Todo esto es configuración externa; el código ya está listo. **Todas las cuentas deben quedar a nombre del cliente.**
 
-Arquitectura: una sola app para todos los restaurantes (Vercel) y una base Postgres administrada (Supabase o Neon). Costo estimado: de $0 a $50 USD al mes.
+Arquitectura: una sola app para todas las cadenas y sus restaurantes (Vercel) y una base Postgres administrada (Supabase o Neon). Costo estimado: de $0 a $50 USD al mes.
 
 ## 1. Cuentas (US-9.1)
 
@@ -39,19 +39,18 @@ Activa los backups diarios: en Supabase vienen en el plan Pro (en Free, descarga
    | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | opcional                        | opcional          |
 
 4. Ramas: `main` → producción. Los PR y `develop` generan previews. Para un staging fijo, asigna un dominio a la rama `develop`.
-5. Primer deploy. Luego crea el administrador real desde tu máquina, apuntando a producción:
+5. Primer deploy. El sistema es multi-cadena: cada cliente es una cadena con sus propios restaurantes, usuarios y respuestas. La migración crea la cadena "Demo". Para dar de alta a un cliente, genera desde tu máquina, apuntando a producción, un enlace de registro de un solo uso (vence en 7 días) y envíaselo:
 
    ```bash
-   DATABASE_URL="<url directa prod>" npx tsx scripts/create-admin.ts correo@cliente.com "Nombre" "ContraseñaSegura"
+   DATABASE_URL="<url directa prod>" APP_URL="https://encuestas.cliente.com" npm run invite:org
    ```
 
-   O, para que el cliente elija su propio correo y contraseña, genera un enlace de registro de un solo uso (vence en 7 días) y envíaselo:
+   Con ese enlace el cliente escribe el nombre de su cadena, crea su cuenta y queda como su administrador. Después, él mismo genera más enlaces para su gente desde Usuarios → "Invitar con enlace". No existe registro público: `/registro` solo funciona con un enlace vigente.
 
-   ```bash
-   DATABASE_URL="<url directa prod>" APP_URL="https://encuestas.cliente.com" npx tsx scripts/create-invite.ts
-   ```
-
-   Después, los administradores pueden generar más enlaces desde Usuarios → "Invitar con enlace". No existe registro público: `/registro` solo funciona con un enlace vigente.
+   Otros comandos, con las mismas variables:
+   - `npm run invite:admin -- "Nombre de la cadena"`: enlace para un administrador más en una cadena que ya existe (sin nombre, la cadena "Demo").
+   - `npm run create-admin -- correo@cliente.com "Nombre" "ContraseñaSegura" "Nombre de la cadena"`: crea el administrador directamente, o le restablece la contraseña si ya existe.
+   - `npm run org:delete -- "Nombre de la cadena"`: borra una cadena de prueba con todo lo suyo. Ver [MANUAL.md](MANUAL.md#cadenas-alta-y-borrado-para-quien-opera-el-sistema).
 
    **No corras el seed en producción**: borra todas las tablas.
 

@@ -54,19 +54,21 @@ Con el seed quedan estas cuentas y datos:
 
 ## Comandos
 
-| Comando                                                | Qué hace                                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `npm run dev`                                          | Servidor de desarrollo                                                                           |
-| `npm run build` / `npm start`                          | Build y servidor de producción                                                                   |
-| `npm run vercel-build`                                 | Migraciones + build (lo usa Vercel)                                                              |
-| `npm run lint` / `npm run typecheck`                   | ESLint / TypeScript                                                                              |
-| `npm test`                                             | Pruebas unitarias e integración (usa `TEST_DATABASE_URL`, por defecto `encuestas_test`)          |
-| `npm run test:e2e`                                     | Playwright; levanta su propio servidor contra `encuestas_e2e`                                    |
-| `npm run db:generate`                                  | Genera una migración nueva tras cambiar `src/db/schema.ts`                                       |
-| `npm run db:migrate`                                   | Aplica migraciones pendientes                                                                    |
-| `npm run db:studio`                                    | Explorador visual de la BD                                                                       |
-| `npm run create-admin -- correo "Nombre" "Contraseña"` | Crea o restablece un administrador                                                               |
-| `npm run invite:admin`                                 | Imprime un enlace de registro de un solo uso para que el cliente cree su cuenta de administrador |
+| Comando                                                | Qué hace                                                                                |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `npm run dev`                                          | Servidor de desarrollo                                                                  |
+| `npm run build` / `npm start`                          | Build y servidor de producción                                                          |
+| `npm run vercel-build`                                 | Migraciones + build (lo usa Vercel)                                                     |
+| `npm run lint` / `npm run typecheck`                   | ESLint / TypeScript                                                                     |
+| `npm test`                                             | Pruebas unitarias e integración (usa `TEST_DATABASE_URL`, por defecto `encuestas_test`) |
+| `npm run test:e2e`                                     | Playwright; levanta su propio servidor contra `encuestas_e2e`                           |
+| `npm run db:generate`                                  | Genera una migración nueva tras cambiar `src/db/schema.ts`                              |
+| `npm run db:migrate`                                   | Aplica migraciones pendientes                                                           |
+| `npm run db:studio`                                    | Explorador visual de la BD                                                              |
+| `npm run create-admin -- correo "Nombre" "Contraseña"` | Crea o restablece un administrador                                                      |
+| `npm run invite:org`                                   | Imprime un enlace de un solo uso para dar de alta una cadena nueva con su administrador |
+| `npm run invite:admin -- "Cadena"`                     | Imprime un enlace de un solo uso para un administrador más en una cadena que ya existe  |
+| `npm run org:delete -- "Cadena"`                       | Borra una cadena de prueba con todo lo suyo (pide confirmación; nunca borra "Demo")     |
 
 Para las pruebas locales crea una vez las bases: `createdb encuestas_test && createdb encuestas_e2e`.
 
@@ -100,7 +102,7 @@ src/
   db/                  esquema Drizzle y conexión
   lib/                 reglas de negocio puras (probadas) y consultas
 drizzle/               migraciones SQL
-scripts/               migrate, seed, create-admin, create-invite
+scripts/               migrate, seed, create-admin, create-invite, invite-org, delete-org
 tests/                 unit, integration (con BD), e2e (Playwright)
 ```
 
