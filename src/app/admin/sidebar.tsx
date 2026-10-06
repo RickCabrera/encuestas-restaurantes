@@ -27,7 +27,15 @@ const groups = [
   },
 ];
 
-export function Sidebar({ isAdmin, organizationName }: { isAdmin: boolean; organizationName: string }) {
+export function Sidebar({
+  isAdmin,
+  organizationName,
+  version,
+}: {
+  isAdmin: boolean;
+  organizationName: string;
+  version: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -64,6 +72,7 @@ export function Sidebar({ isAdmin, organizationName }: { isAdmin: boolean; organ
       ))}
     </nav>
   );
+  const versionLabel = version ? <p className="mt-auto px-3 pt-6 text-[12px] text-white/50">Versión {version}</p> : null;
 
   return (
     <>
@@ -86,6 +95,7 @@ export function Sidebar({ isAdmin, organizationName }: { isAdmin: boolean; organ
       {open ? (
         <div id="mobile-nav" className="bg-basil-dark px-3 pb-6 lg:hidden">
           {nav}
+          {versionLabel}
         </div>
       ) : null}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-basil-dark px-3 py-6 lg:flex">
@@ -96,6 +106,7 @@ export function Sidebar({ isAdmin, organizationName }: { isAdmin: boolean; organ
           </p>
         </div>
         {nav}
+        {versionLabel}
       </aside>
     </>
   );

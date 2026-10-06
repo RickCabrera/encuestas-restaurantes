@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+// Build de la versión instalable en PC (docs/INSTALAR-PC.md). Sin APP_MODE=local, el build es el de nube.
+const isLocal = process.env.APP_MODE === "local";
 
 const csp = [
   "default-src 'self'",
@@ -19,7 +21,8 @@ const csp = [
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  // En modo local se sirve por http: HSTS no aplica.
+  ...(isLocal ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]),
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -30,6 +33,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Permite correr un segundo servidor (pruebas E2E) sin chocar con el de desarrollo.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Modo local: servidor autocontenido (.next/standalone) y el modo visible también en el navegador.
+  ...(isLocal ? { output: "standalone" as const, env: { NEXT_PUBLIC_APP_MODE: "local" } } : {}),
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },
