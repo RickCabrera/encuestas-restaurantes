@@ -273,10 +273,15 @@ class MainActivity : Activity() {
             true
         }
         enter.setOnClickListener {
+            val typed = input.text.toString()
+            // Un PIN incompleto no gasta intento; además el Enter de un teclado físico llega dos
+            // veces, la segunda con el campo ya vacío o el diálogo ya cerrado.
+            if (!d.isShowing || typed.length < PIN_MIN_DIGITS) return@setOnClickListener
             val locked = PinGate.lockSeconds()
             if (locked > 0) {
+                input.text.clear()
                 input.error = getString(R.string.pin_locked, locked)
-            } else if (PinGate.verify(pin, input.text.toString())) {
+            } else if (PinGate.verify(pin, typed)) {
                 d.dismiss()
                 showMenu()
             } else {
@@ -437,6 +442,8 @@ class MainActivity : Activity() {
     private companion object {
         const val RETRY_MS = 10_000L
         const val DIALOG_TIMEOUT_MS = 60_000L
+        // El panel pide un PIN de 4 a 6 dígitos.
+        const val PIN_MIN_DIGITS = 4
 
         /** Lee lo que el kiosko web guarda en localStorage (src/components/kiosk/storage.ts). */
         const val READ_KIOSK_STATE = """
