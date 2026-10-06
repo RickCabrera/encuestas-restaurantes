@@ -283,9 +283,9 @@ function Update-ListoPage([string]$InviteLink = '') {
       '<p class="note">Si ya lo usaste o venció, genera otro con el acceso directo "Generar enlace de alta nuevo".</p>'
   } else {
     $invite = '<h2>3. Entra al panel</h2>' +
-      '<p>El sistema ya tiene usuarios. Entra con tu correo y contraseña en:</p>' +
+      '<p>Entra con tu correo y contraseña en:</p>' +
       '<p class="value small">' + (ConvertTo-Html "$appUrl/login") + '</p>' +
-      '<p class="note">Para dar de alta otra cadena usa el acceso directo "Generar enlace de alta nuevo".</p>'
+      '<p class="note">Si todavía no creas tu cadena (o quieres dar de alta otra), usa el acceso directo "Generar enlace de alta nuevo".</p>'
   }
 
   $template = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'listo.template.html'), [System.Text.Encoding]::UTF8)
