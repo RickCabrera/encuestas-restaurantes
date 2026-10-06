@@ -33,26 +33,44 @@ $browser.DocumentText = [System.IO.File]::ReadAllText($ListoHtml, [System.Text.E
 
 $bar = New-Object System.Windows.Forms.FlowLayoutPanel
 $bar.Dock = 'Bottom'
-$bar.Height = 52
-$bar.Padding = New-Object System.Windows.Forms.Padding(8)
+$bar.Height = 72
+$bar.Padding = New-Object System.Windows.Forms.Padding(12, 10, 12, 10)
+
+# El sistema se abre con el mismo lanzador del Escritorio. Va por explorer.exe para que no
+# herede los permisos de administrador de esta ventana.
+function Open-System {
+  Start-Process -FilePath (Join-Path $env:SystemRoot 'explorer.exe') -ArgumentList "`"$LauncherExe`""
+}
+
+function Add-MainButton([string]$Text) {
+  $button = New-Object System.Windows.Forms.Button
+  $button.Text = $Text
+  $button.AutoSize = $true
+  $button.Height = 48
+  $button.MinimumSize = New-Object System.Drawing.Size(260, 48)
+  $button.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 13)
+  $button.FlatStyle = 'Flat'
+  $button.FlatAppearance.BorderSize = 0
+  $button.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#2f6b4f')
+  $button.ForeColor = [System.Drawing.Color]::White
+  $button.Add_Click({ Open-System })
+  $bar.Controls.Add($button)
+  $form.AcceptButton = $button
+}
 
 function Add-Button([string]$Text, [scriptblock]$OnClick) {
   $button = New-Object System.Windows.Forms.Button
   $button.Text = $Text
   $button.AutoSize = $true
-  $button.Height = 32
+  $button.Height = 48
   $button.Add_Click($OnClick)
   $bar.Controls.Add($button)
 }
 
+# Sin usuarios, el lanzador lleva directo a crear la cadena: nadie copia ni pega enlaces.
+if ($data -and $data.inviteLink) { Add-MainButton 'Crear mi cadena' } else { Add-MainButton 'Abrir Sobremesa Encuestas' }
 if ($data -and $data.tabletUrl) {
   Add-Button 'Copiar dirección de las tablets' { [System.Windows.Forms.Clipboard]::SetText($data.tabletUrl) }
-}
-if ($data -and $data.inviteLink) {
-  Add-Button 'Copiar enlace de alta' { [System.Windows.Forms.Clipboard]::SetText($data.inviteLink) }
-  Add-Button 'Abrir enlace de alta' { Start-Process $data.inviteLink }
-} else {
-  Add-Button 'Abrir el panel' { Start-Process "http://localhost:$AppPort/login" }
 }
 Add-Button 'Cerrar' { $form.Close() }
 

@@ -16,6 +16,7 @@ $App = Join-Path $env:ProgramFiles 'Sobremesa Encuestas'
 $Logs = Join-Path $(if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }) 'instalador-logs'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 $AdminsAndSystem = @('S-1-5-18', 'S-1-5-32-544')
+Add-Type -AssemblyName System.Drawing
 
 function Check([bool]$Condition, [string]$Message) {
   if (-not $Condition) { throw "FALLO: $Message" }
@@ -65,6 +66,72 @@ function Check-OnlyAdmins([string]$Path) {
   $sids = Get-Sids $Path
   $extra = @($sids | Where-Object { $AdminsAndSystem -notcontains $_ })
   Check ($extra.Count -eq 0) "$Path solo lo leen Administradores y SYSTEM ($($sids -join ', '))"
+}
+
+# Pide una direccion sin seguir redirecciones: devuelve el codigo y a donde manda.
+function Get-Response([string]$Url, [hashtable]$Headers = @{}) {
+  $request = [System.Net.HttpWebRequest]::Create($Url)
+  $request.AllowAutoRedirect = $false
+  $request.Timeout = 15000
+  $request.Proxy = $null
+  foreach ($name in $Headers.Keys) { $request.Headers.Add($name, $Headers[$name]) }
+  try {
+    $response = $request.GetResponse()
+  } catch [System.Net.WebException] {
+    $response = $_.Exception.Response
+    if (-not $response) { throw }
+  }
+  $result = [pscustomobject]@{ Status = [int]$response.StatusCode; Location = $response.Headers['Location'] }
+  $response.Close()
+  return $result
+}
+
+# El acceso directo "Sobremesa Encuestas": lanzador, iconos, llave de /inicio y permiso de arranque.
+function Check-Launcher {
+  $launcher = Join-Path $App 'SobremesaEncuestas.exe'
+  Check (Test-Path $launcher) 'Existe el lanzador SobremesaEncuestas.exe'
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcuts = @{
+    'Escritorio'  = Join-Path $env:PUBLIC 'Desktop\Sobremesa Encuestas.lnk'
+    'menu Inicio' = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Sobremesa Encuestas\Sobremesa Encuestas.lnk'
+  }
+  foreach ($where in $shortcuts.Keys) {
+    Check (Test-Path $shortcuts[$where]) "Acceso directo en $where"
+    Check ($shell.CreateShortcut($shortcuts[$where]).TargetPath -eq $launcher) "El acceso directo de $where abre el lanzador"
+  }
+  Check ([System.Drawing.Icon]::ExtractAssociatedIcon($launcher).Width -gt 0) 'El lanzador trae icono'
+
+  $values = Read-Env
+  $key = $values['LOCAL_SETUP_KEY']
+  Check ($key.Length -ge 64) 'Llave de /inicio aleatoria en el .env'
+  Check (([System.IO.File]::ReadAllText((Join-Path $Data 'publico\llave-inicio.txt'))).Trim() -eq $key) 'La llave esta donde la lee el acceso directo'
+  Check ((Get-Sids (Join-Path $Data 'publico')) -contains 'S-1-5-32-545') 'Los usuarios de la PC pueden leer publico\'
+
+  foreach ($name in @('SobremesaEncuestasDB', 'SobremesaEncuestasApp')) {
+    $sddl = ((& sc.exe sdshow $name) -join '') -replace '\s', ''
+    Check ($sddl.Contains('(A;;RPLC;;;BU)')) "Los usuarios pueden arrancar $name (y nada mas)"
+  }
+
+  $print = Join-Path $Logs 'lanzador.txt'
+  $p = Start-Process -FilePath $launcher -ArgumentList "--print=$print" -Wait -PassThru
+  Check ($p.ExitCode -eq 0) 'El lanzador corre'
+  $printed = Get-Content $print -Raw
+  Check ($printed -match [regex]::Escape("url=http://localhost:3000/inicio?llave=$key")) 'El lanzador abre /inicio con la llave'
+  Check ($printed -match 'salud=ok') 'El lanzador ve la app arriba'
+  Remove-Item $print -Force
+}
+
+# /inicio solo atiende a la propia PC y con la llave.
+function Check-Inicio([string]$ExpectedLocation) {
+  $values = Read-Env
+  $key = $values['LOCAL_SETUP_KEY']
+  $r = Get-Response "http://127.0.0.1:3000/inicio?llave=$key"
+  Check ($r.Status -eq 307 -and $r.Location -match $ExpectedLocation) "/inicio con llave desde la PC manda a $($r.Location -replace 'codigo=.*', 'codigo=...')"
+  Check ((Get-Response 'http://127.0.0.1:3000/inicio').Status -eq 404) '/inicio sin llave: 404'
+  Check ((Get-Response ("http://127.0.0.1:3000/inicio?llave=" + ('0' * 64))).Status -eq 404) '/inicio con otra llave: 404'
+  $lan = $values['APP_URL']
+  Check ((Get-Response "$lan/inicio?llave=$key").Status -eq 404) "/inicio por la IP de la red ($lan): 404 aunque traiga la llave"
+  Check ((Get-Response "$lan/inicio?llave=$key" @{ 'X-Forwarded-For' = '127.0.0.1' }).Status -eq 404) '/inicio por la red fingiendo ser la PC (X-Forwarded-For): 404'
 }
 
 function Check-Running([bool]$IsUpdate) {
@@ -119,6 +186,7 @@ function Check-Running([bool]$IsUpdate) {
   Check ($listo.tabletUrl -eq $values['APP_URL']) 'La pagina Listo muestra la direccion de las tablets'
   Check ((Get-Content (Join-Path $Data 'listo.html') -Raw) -match [regex]::Escape($Version)) 'listo.html trae la version'
   Check (Test-Path (Join-Path $Data 'energia-anterior.json')) 'Se guardo la configuracion de suspension anterior'
+  Check-Launcher
 }
 
 try {
@@ -133,6 +201,7 @@ try {
   Check ($listo.inviteLink -match ('^' + [regex]::Escape($appUrl) + '/registro\?codigo=[A-Za-z0-9_-]{43}$')) 'Enlace de alta de un solo uso con la IP de la PC'
   $signup = Invoke-WebRequest -UseBasicParsing -Uri ($listo.inviteLink -replace [regex]::Escape($appUrl), 'http://127.0.0.1:3000')
   Check ($signup.StatusCode -eq 200) 'El enlace de alta abre la pagina de registro'
+  Check-Inicio '^/registro\?codigo=[A-Za-z0-9_-]{43}$'
 
   Section '2. Respaldo'
   & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $App 'tools\backup.ps1')
@@ -150,6 +219,15 @@ try {
   Section '3. Herramientas'
   & (Join-Path $App 'node\node.exe') "--env-file=$Data\.env" (Join-Path $App 'tools\js\reset-admin-password.cjs') --list
   Check ($LASTEXITCODE -eq 0) 'reset-admin-password --list'
+  # Con un administrador: la herramienta le cambia la contrasena y /inicio ya manda al login.
+  Invoke-Sql "with o as (insert into organizations (name) values ('Prueba de humo') returning id) insert into users (organization_id, name, email, password_hash, role) select id, 'Prueba', 'humo@example.com', 'x', 'ADMIN' from o" | Out-Null
+  $env:RESET_PASSWORD = 'Clave-de-prueba-123'
+  & (Join-Path $App 'node\node.exe') "--env-file=$Data\.env" (Join-Path $App 'tools\js\reset-admin-password.cjs') 'humo@example.com'
+  $resetCode = $LASTEXITCODE
+  $env:RESET_PASSWORD = $null
+  Check ($resetCode -eq 0) 'reset-admin-password cambia la contrasena de un administrador'
+  Check ((Invoke-Sql "select password_hash from users where email = 'humo@example.com'") -like '$2*') 'La contrasena quedo guardada con bcrypt'
+  Check-Inicio '^/login$'
   & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $App 'tools\actualizar-ip.ps1') -Yes
   Check ($LASTEXITCODE -eq 0) 'actualizar-ip.ps1 (sin cambio de IP)'
 
@@ -189,6 +267,7 @@ try {
   Check (-not (Get-ScheduledTask -TaskName 'Sobremesa Encuestas - Respaldo diario' -ErrorAction SilentlyContinue)) 'Tarea de respaldo eliminada'
   Check (-not (Test-Path (Join-Path $Data 'energia-anterior.json'))) 'Suspension restaurada'
   Check ((Test-Path (Join-Path $Data 'pgdata\PG_VERSION')) -and (Test-Path (Join-Path $Data '.env'))) 'Los datos se conservaron'
+  Check (-not (Test-Path (Join-Path $env:PUBLIC 'Desktop/Sobremesa Encuestas.lnk'))) 'Acceso directo del Escritorio eliminado'
   Check (-not (Test-Path (Join-Path $App 'app\server.js'))) 'El programa se quito'
 
   Section '7. Reinstalar sobre los datos conservados'

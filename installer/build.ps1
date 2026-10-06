@@ -90,6 +90,8 @@ try {
   Copy-Item $standalone $app -Recurse
   Copy-Item (Join-Path $Root 'public') (Join-Path $app 'public') -Recurse
   Copy-Item (Join-Path $Root "$distDir\static") (Join-Path $app "$distDir\static") -Recurse
+  # El servicio arranca la app con este archivo en lugar de server.js.
+  Copy-Item (Join-Path $PSScriptRoot 'scripts\local-server.cjs') $app
   # El .env de quien compila (si lo hay) jamas viaja en el instalador.
   Get-ChildItem -Path $app -Force -Filter '.env*' | Remove-Item -Force
   if (Get-ChildItem -Path $app -Force -Recurse -Filter '.env*') { throw 'Quedo un archivo .env dentro del paquete.' }
@@ -112,6 +114,17 @@ foreach ($script in (Get-ChildItem (Join-Path $PSScriptRoot 'scripts') -Filter '
   Copy-WithBom $script.FullName (Join-Path $tools $script.Name)
 }
 Copy-Item (Join-Path $PSScriptRoot 'scripts\listo.template.html') $tools
+
+Step 'Lanzador (SobremesaEncuestas.exe)'
+# Se compila con el csc.exe de .NET Framework que trae Windows: sin dependencias nuevas.
+$csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+if (-not (Test-Path $csc)) { throw "No se encontro $csc" }
+$icon = Join-Path $PSScriptRoot 'assets\sobremesa.ico'
+Invoke-Cmd 'csc' {
+  & $csc /nologo /codepage:65001 /target:winexe /optimize+ "/win32icon:$icon" `
+    /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.ServiceProcess.dll `
+    "/out:$(Join-Path $Payload 'SobremesaEncuestas.exe')" (Join-Path $PSScriptRoot 'launcher\Launcher.cs')
+}
 
 Step 'Node, PostgreSQL, WinSW y runtime de Visual C++'
 $extract = Join-Path $Build 'extract'
@@ -146,7 +159,7 @@ if (-not $iscc) { throw 'No se encontro Inno Setup 6 (ISCC.exe). Instalalo o usa
 # Inno Setup necesita el .iss en UTF-8 con BOM para los acentos.
 $iss = Join-Path $Build 'setup.iss'
 Copy-WithBom (Join-Path $PSScriptRoot 'setup.iss') $iss
-Invoke-Cmd 'ISCC' { & $iscc /Qp "/DAppVersion=$Version" "/DPgMajor=$($Versions.postgres.major)" "/DPayloadDir=$Payload" "/DOutputDir=$Out" $iss }
+Invoke-Cmd 'ISCC' { & $iscc /Qp "/DAppVersion=$Version" "/DPgMajor=$($Versions.postgres.major)" "/DPayloadDir=$Payload" "/DOutputDir=$Out" "/DIconFile=$icon" $iss }
 
 $setup = Get-ChildItem $Out -Filter '*.exe' | Select-Object -First 1
 $hash = (Get-FileHash $setup.FullName -Algorithm SHA256).Hash.ToLower()

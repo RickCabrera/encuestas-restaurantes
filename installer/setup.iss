@@ -14,6 +14,9 @@
 #ifndef OutputDir
   #define OutputDir "build\out"
 #endif
+#ifndef IconFile
+  #define IconFile "assets\sobremesa.ico"
+#endif
 
 #define AppName "Sobremesa Encuestas"
 #define PowerShell "{sys}\WindowsPowerShell\v1.0\powershell.exe"
@@ -44,6 +47,8 @@ WizardStyle=modern
 CloseApplications=no
 SetupLogging=yes
 UninstallDisplayName={#AppName}
+SetupIconFile={#IconFile}
+UninstallDisplayIcon={app}\SobremesaEncuestas.exe
 
 [Languages]
 Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -54,27 +59,29 @@ Type: filesandordirs; Name: "{app}\app"
 Type: filesandordirs; Name: "{app}\node"
 Type: filesandordirs; Name: "{app}\pgsql"
 Type: filesandordirs; Name: "{app}\tools"
+; El acceso "Abrir el panel" de las primeras versiones: lo reemplaza el lanzador.
+Type: files; Name: "{app}\Panel.url"
+Type: files; Name: "{group}\Abrir el panel.lnk"
 
 [Files]
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "{#PayloadDir}\tools\precheck.ps1"; Flags: dontcopy
 
-[INI]
-Filename: "{app}\Panel.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://localhost:3000/admin"
-
 [Icons]
-Name: "{group}\Abrir el panel"; Filename: "{app}\Panel.url"
+; El programa: abre el sistema en su propia ventana. No pide permisos de administrador.
+Name: "{group}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
+Name: "{autodesktop}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
 Name: "{group}\Datos de la instalación (Listo)"; Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""
 Name: "{group}\Generar enlace de alta nuevo"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\nuevo-enlace.ps1"""
 Name: "{group}\Restablecer contraseña de administrador"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\restablecer-contrasena.ps1"""
 Name: "{group}\Actualizar la IP"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\actualizar-ip.ps1"""
 
 [Run]
+Filename: "{app}\SobremesaEncuestas.exe"; Description: "Abrir Sobremesa Encuestas"; Flags: postinstall nowait skipifsilent; Check: InstallSucceeded
 ; Página "Listo". Se abre con permisos de administrador porque solo ellos pueden leerla.
 Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""; Description: "Ver los datos de la instalación (IP, dirección para las tablets y enlace de alta)"; Flags: postinstall nowait skipifsilent runascurrentuser; Check: InstallSucceeded
 
 [UninstallDelete]
-Type: files; Name: "{app}\Panel.url"
 Type: filesandordirs; Name: "{app}\services"
 
 [Code]

@@ -19,6 +19,10 @@ $PgData = Join-Path $DataDir 'pgdata'
 $BackupDir = Join-Path $DataDir 'backups'
 $LogDir = Join-Path $DataDir 'logs'
 $SecretDir = Join-Path $DataDir 'secretos'
+# Lo único de la carpeta de datos que leen los usuarios sin permisos de administrador.
+$PublicDir = Join-Path $DataDir 'publico'
+$SetupKeyFile = Join-Path $PublicDir 'llave-inicio.txt'
+$LauncherExe = Join-Path $InstallDir 'SobremesaEncuestas.exe'
 $ListoHtml = Join-Path $DataDir 'listo.html'
 $ListoJson = Join-Path $DataDir 'listo.json'
 $PowerStateFile = Join-Path $DataDir 'energia-anterior.json'
@@ -36,6 +40,7 @@ $SidAdmins = '*S-1-5-32-544'
 $SidSystem = '*S-1-5-18'
 $SidLocalService = '*S-1-5-19'
 $SidNetworkService = '*S-1-5-20'
+$SidUsers = '*S-1-5-32-545'
 
 function Test-Admin {
   $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -278,14 +283,12 @@ function Update-ListoPage([string]$InviteLink = '') {
 
   if ($InviteLink) {
     $invite = '<h2>3. Crea tu cadena y el usuario maestro</h2>' +
-      '<p>Abre este enlace en el navegador de esta PC o de cualquier equipo de la misma red. Sirve <strong>una sola vez</strong> y vence en 7 días.</p>' +
-      '<p class="value small">' + (ConvertTo-Html $InviteLink) + '</p>' +
-      '<p class="note">Si ya lo usaste o venció, genera otro con el acceso directo "Generar enlace de alta nuevo".</p>'
+      '<p>Toca el botón <strong>Crear mi cadena</strong>, aquí abajo. Escribes el nombre de tu cadena, tu nombre, tu correo y una contraseña, y listo.</p>' +
+      '<p class="note">Otra forma, desde otro equipo de la misma red: abre este enlace. Sirve una sola vez y vence en 7 días.<br /><span class="link">' + (ConvertTo-Html $InviteLink) + '</span></p>'
   } else {
-    $invite = '<h2>3. Entra al panel</h2>' +
-      '<p>Entra con tu correo y contraseña en:</p>' +
-      '<p class="value small">' + (ConvertTo-Html "$appUrl/login") + '</p>' +
-      '<p class="note">Si todavía no creas tu cadena (o quieres dar de alta otra), usa el acceso directo "Generar enlace de alta nuevo".</p>'
+    $invite = '<h2>3. Entra al sistema</h2>' +
+      '<p>Toca el botón <strong>Abrir Sobremesa Encuestas</strong>, aquí abajo, o usa el icono del Escritorio.</p>' +
+      '<p class="note">Para dar de alta otra cadena usa el acceso directo "Generar enlace de alta nuevo" del menú Inicio.</p>'
   }
 
   $template = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'listo.template.html'), [System.Text.Encoding]::UTF8)

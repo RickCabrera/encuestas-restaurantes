@@ -58,8 +58,20 @@ function Register-AppService([string]$Id, [string]$Account) {
   Invoke-Checked -What "Cuenta del servicio $Id" -File $Sc -Arguments @('config', $Id, 'obj=', $Account, 'password=', '', 'start=', 'auto') | Out-Null
 }
 
+# Permiso para ARRANCAR el servicio (y ver su estado) a los usuarios de la PC, para que el
+# acceso directo pueda levantarlo si está detenido. Detenerlo o reconfigurarlo sigue siendo
+# cosa de administradores. En SDDL: RP = arrancar, LC = consultar estado, BU = Usuarios.
+function Grant-ServiceStart([string]$Id) {
+  $ace = '(A;;RPLC;;;BU)'
+  $sddl = (Invoke-Checked -What "Leer permisos del servicio $Id" -File $Sc -Arguments @('sdshow', $Id)).Output -replace '\s', ''
+  if ($sddl.Contains($ace)) { return }
+  $sacl = $sddl.IndexOf('S:')
+  $updated = if ($sacl -lt 0) { $sddl + $ace } else { $sddl.Substring(0, $sacl) + $ace + $sddl.Substring($sacl) }
+  Invoke-Checked -What "Permiso de arranque del servicio $Id" -File $Sc -Arguments @('sdset', $Id, $updated) | Out-Null
+}
+
 function Initialize-Folders {
-  foreach ($dir in @($DataDir, $PgData, $BackupDir, $LogDir, (Join-Path $LogDir 'postgres'), $SecretDir)) {
+  foreach ($dir in @($DataDir, $PgData, $BackupDir, $LogDir, (Join-Path $LogDir 'postgres'), $SecretDir, $PublicDir)) {
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
   }
   # La carpeta de datos (con backups\, secretos\, .env y la página "Listo") solo la leen
@@ -67,6 +79,7 @@ function Initialize-Folders {
   Invoke-Checked -What 'Permisos de la carpeta de datos' -File $Icacls -Arguments @($DataDir, '/inheritance:r', '/grant:r', "${SidAdmins}:(OI)(CI)F", "${SidSystem}:(OI)(CI)F") | Out-Null
   Set-Acl-Grant $PgData @("${SidNetworkService}:(OI)(CI)F")
   Set-Acl-Grant $LogDir @("${SidNetworkService}:(OI)(CI)M", "${SidLocalService}:(OI)(CI)M")
+  Set-Acl-Grant $PublicDir @("${SidUsers}:(OI)(CI)R")
 }
 
 function Initialize-EnvFile([bool]$Fresh) {
@@ -87,6 +100,7 @@ function Initialize-EnvFile([bool]$Fresh) {
       LOCAL_DB_NAME     = 'encuestas'
       LOCAL_DB_USER     = 'encuestas'
       LOCAL_DB_PASSWORD = $password
+      LOCAL_SETUP_KEY   = New-Secret 32
     }
     # Primero el archivo vacío con sus permisos; después los secretos.
     [System.IO.File]::WriteAllText($EnvFile, '', $Utf8NoBom)
@@ -97,12 +111,14 @@ function Initialize-EnvFile([bool]$Fresh) {
     Set-Acl-Grant $EnvFile @("${SidLocalService}:R")
     $values = Read-EnvFile
     $changed = $false
-    foreach ($default in @(@('APP_MODE', 'local'), @('SESSION_DAYS', '7'), @('DATABASE_POOL_MAX', '10'))) {
+    foreach ($default in @(@('APP_MODE', 'local'), @('SESSION_DAYS', '7'), @('DATABASE_POOL_MAX', '10'), @('LOCAL_SETUP_KEY', (New-Secret 32)))) {
       if (-not $values.Contains($default[0])) { $values[$default[0]] = $default[1]; $changed = $true }
     }
     if ($changed) { Write-EnvFile $values }
     Write-Log "Se conserva la configuración de $EnvFile."
   }
+  # La llave de /inicio, donde la pueda leer el acceso directo (que no pide administrador).
+  [System.IO.File]::WriteAllText($SetupKeyFile, (Read-EnvFile)['LOCAL_SETUP_KEY'], $Utf8NoBom)
   if (-not (Test-Path $SuperuserFile)) {
     if (-not $Fresh) { return }
     [System.IO.File]::WriteAllText($SuperuserFile, (New-Secret 24), $Utf8NoBom)
@@ -169,7 +185,7 @@ function Register-Services($Values) {
       "  <name>$AppName - Aplicación</name>",
       "  <description>Panel y encuestas de Sobremesa en http://IP-de-esta-PC:$AppPort</description>",
       "  <executable>$NodeExe</executable>",
-      "  <arguments>--env-file=`"$EnvFile`" server.js</arguments>",
+      "  <arguments>--env-file=`"$EnvFile`" local-server.cjs</arguments>",
       "  <workingdirectory>$(Join-Path $InstallDir 'app')</workingdirectory>",
       '  <env name="NODE_ENV" value="production"/>',
       '  <env name="APP_MODE" value="local"/>',
@@ -182,6 +198,8 @@ function Register-Services($Values) {
     ) -join "`n")
   Register-AppService $DbService 'NT AUTHORITY\NetworkService'
   Register-AppService $AppService 'NT AUTHORITY\LocalService'
+  Grant-ServiceStart $DbService
+  Grant-ServiceStart $AppService
 }
 
 function Register-Firewall {
