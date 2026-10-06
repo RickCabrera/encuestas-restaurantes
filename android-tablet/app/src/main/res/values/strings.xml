@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sobremesa Tablet</string>
+    <string name="version_label">Versión %1$s (%2$d)</string>
+
+    <string name="setup_title">Dirección del servidor</string>
+    <string name="setup_help">Escribe la dirección del sistema de encuestas. Por ejemplo https://encuestas.sitirt.mx o http://192.168.1.50:3000</string>
+    <string name="setup_hint" translatable="false">https://encuestas.sitirt.mx</string>
+    <string name="setup_save">Guardar y conectar</string>
+    <string name="setup_cancel">Cancelar</string>
+    <string name="setup_checking">Comprobando %1$s…</string>
+    <string name="setup_error_empty">Escribe la dirección del servidor.</string>
+    <string name="setup_error_invalid">La dirección no es válida. Revisa que esté bien escrita.</string>
+    <string name="setup_error_unreachable">No se pudo conectar con %1$s. Revisa la dirección y que la tablet tenga red.</string>
+    <string name="setup_error_not_server">%1$s respondió, pero no es un servidor de encuestas.</string>
+    <string name="setup_pending_warning">Hay %1$d respuestas sin enviar al servidor actual. Si cambias de servidor se quedan guardadas en la tablet, pero solo se envían al volver a esta dirección.</string>
+
+    <string name="offline_title">Sin conexión, reintentando</string>
+    <string name="offline_detail">No se pudo abrir %1$s. Se reintenta cada 10 segundos.</string>
+    <string name="offline_hint">Para cambiar la dirección, mantén presionadas 5 segundos las dos esquinas de arriba.</string>
+
+    <string name="pin_title">PIN de la tablet</string>
+    <string name="pin_message">Escribe el PIN del restaurante para abrir el menú de la app.</string>
+    <string name="pin_ok">Entrar</string>
+    <string name="pin_wrong">PIN incorrecto</string>
+    <string name="pin_locked">Demasiados intentos. Espera %1$d segundos.</string>
+
+    <string name="menu_title">Menú de la app</string>
+    <string name="menu_server">Servidor: %1$s</string>
+    <string name="menu_reload">Recargar la encuesta</string>
+    <string name="menu_change_server">Cambiar servidor</string>
+    <string name="menu_remove_owner">Quitar el bloqueo total</string>
+    <string name="menu_close">Cerrar</string>
+    <string name="remove_owner_title">¿Quitar el bloqueo total?</string>
+    <string name="remove_owner_message">La app deja de ser administradora del dispositivo y la tablet vuelve a funcionar como una tablet normal. Para activarlo de nuevo hay que repetir la instalación con restablecimiento de fábrica.</string>
+    <string name="remove_owner_confirm">Quitar bloqueo</string>
+</resources>

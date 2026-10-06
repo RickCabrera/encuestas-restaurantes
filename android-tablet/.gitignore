@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+
+# Firma: el keystore vive en GitHub Secrets, nunca en el repo.
+*.jks
+*.keystore
+keystore.properties

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- -1px equivale a match_parent: en pantallas angostas el formulario ocupa todo el ancho. -->
+    <dimen name="form_width">-1px</dimen>
+</resources>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/paper"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="@dimen/form_width"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/setup_title"
+                android:textColor="@color/ink"
+                android:textSize="34sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="@string/setup_help"
+                android:textColor="@color/ink_soft"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/pending_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/warning_bg"
+                android:padding="16dp"
+                android:textColor="@color/ink"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/server_input"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="@drawable/field_bg"
+                android:hint="@string/setup_hint"
+                android:imeOptions="actionGo"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:paddingHorizontal="18dp"
+                android:singleLine="true"
+                android:textColor="@color/ink"
+                android:textColorHint="@color/ink_faint"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:minHeight="48dp"
+                android:textColor="@color/chile"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/save"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="@drawable/button_primary"
+                android:stateListAnimator="@null"
+                android:text="@string/setup_save"
+                android:textAllCaps="false"
+                android:textColor="@color/surface"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/cancel"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/setup_cancel"
+                android:textAllCaps="false"
+                android:textColor="@color/ink_soft"
+                android:textSize="18sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:textColor="@color/ink_faint"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </FrameLayout>
+</ScrollView>

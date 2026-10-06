@@ -45,3 +45,7 @@ next-env.d.ts
 /.next-e2e/
 /test-results/
 /playwright-report/
+
+# app Android de las tablets: la firma va en GitHub Secrets (docs/TABLET-APK.md)
+*.jks
+*.keystore
