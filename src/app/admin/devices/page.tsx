@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { devices, restaurants } from "@/db/schema";
 import { EmptyState, PageHeader } from "@/components/ui/primitives";
+import { isLocalMode } from "@/lib/app-mode";
 import { requireAdmin } from "@/lib/auth";
 import { restaurantScope } from "@/lib/authz";
 import { formatDateTime } from "@/lib/dates";
@@ -9,6 +10,7 @@ import { parseFilters } from "@/lib/filters";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
 import { appUrl } from "@/lib/request";
 import { AddDevice, DeviceRowActions } from "./device-actions";
+import { TabletAddress } from "./tablet-address";
 
 export const metadata = { title: "Tablets" };
 
@@ -52,7 +54,8 @@ export default async function DevicesPage({ searchParams }: { searchParams: Prom
       ),
     )
     .orderBy(asc(restaurants.name), asc(devices.name));
-  const kioskUrl = `${await appUrl()}/kiosk`;
+  const base = await appUrl();
+  const kioskUrl = `${base}/kiosk`;
 
   return (
     <>
@@ -66,6 +69,7 @@ export default async function DevicesPage({ searchParams }: { searchParams: Prom
         }
         actions={<AddDevice restaurants={rs} defaultRestaurant={f.restaurantId} />}
       />
+      {isLocalMode() ? <TabletAddress url={base} /> : null}
       {rows.length === 0 ? (
         <EmptyState title="Aún no hay tablets" action={<AddDevice restaurants={rs} defaultRestaurant={f.restaurantId} />}>
           Agrega una tablet para obtener su código de vinculación.
