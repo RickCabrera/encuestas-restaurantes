@@ -62,7 +62,8 @@ function Register-AppService([string]$Id, [string]$Account) {
 # acceso directo pueda levantarlo si está detenido. Detenerlo o reconfigurarlo sigue siendo
 # cosa de administradores. En SDDL: RP = arrancar, LC = consultar estado, BU = Usuarios.
 function Grant-ServiceStart([string]$Id) {
-  $ace = '(A;;RPLC;;;BU)'
+  # Windows devuelve los permisos en su propio orden (LC antes que RP): se escribe igual para reconocerlo.
+  $ace = '(A;;LCRP;;;BU)'
   $sddl = (Invoke-Checked -What "Leer permisos del servicio $Id" -File $Sc -Arguments @('sdshow', $Id)).Output -replace '\s', ''
   if ($sddl.Contains($ace)) { return }
   $sacl = $sddl.IndexOf('S:')

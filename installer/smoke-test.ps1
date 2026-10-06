@@ -109,7 +109,8 @@ function Check-Launcher {
 
   foreach ($name in @('SobremesaEncuestasDB', 'SobremesaEncuestasApp')) {
     $sddl = ((& sc.exe sdshow $name) -join '') -replace '\s', ''
-    Check ($sddl.Contains('(A;;RPLC;;;BU)')) "Los usuarios pueden arrancar $name (y nada mas)"
+    $forUsers = @([regex]::Matches($sddl, '[(][^()]*;;;BU[)]') | ForEach-Object { $_.Value })
+    Check ($forUsers.Count -eq 1 -and $forUsers[0] -eq '(A;;LCRP;;;BU)') "Los usuarios pueden arrancar $name y nada mas ($($forUsers -join ' '))"
   }
 
   $print = Join-Path $Logs 'lanzador.txt'
