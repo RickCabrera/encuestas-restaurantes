@@ -29,8 +29,11 @@ try {
       Write-Log "APP_URL actualizada a $new."
       Write-Host ''
       Write-Host 'Listo. Falta, a mano:'
-      Write-Host "  1. En cada tablet: mantén presionada la esquina superior izquierda, escribe el PIN y cambia el servidor a $new"
-      Write-Host '  2. Vuelve a imprimir los QR de mesa: los anteriores llevan la IP vieja.'
+      Write-Host '  1. En cada tablet: mantén presionadas las dos esquinas superiores 5 segundos, escribe el PIN,'
+      Write-Host "     toca 'Cambiar servidor' y escribe $new"
+      Write-Host '  2. Vuelve a vincular cada tablet desde el panel (Tablets > Agregar tablet).'
+      Write-Host '  3. Vuelve a imprimir los QR de mesa: los anteriores llevan la IP vieja.'
+      Write-Host '  4. Reserva esta IP en el router para que no vuelva a cambiar (INSTALAR-PC, "Fijar la IP").'
     } else {
       Write-Host 'No se cambió nada.'
     }

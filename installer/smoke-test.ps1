@@ -1,7 +1,7 @@
 # Prueba de humo del Setup.exe. INSTALA servicios y PostgreSQL en la maquina donde corre:
 # es para el runner de GitHub Actions (.github/workflows/instalador-pc.yml), no para tu PC.
 #
-# Instala, comprueba, instala encima (actualizacion), desinstala conservando datos,
+# Instala, comprueba, respalda, instala encima (actualizacion), restaura, desinstala conservando datos,
 # reinstala sobre esos datos y al final borra todo.
 param(
   [Parameter(Mandatory = $true)][string]$Setup,
@@ -164,7 +164,25 @@ try {
   Check ([int](Invoke-Sql 'select count(*) from signup_invites') -ge [int]$invites) 'Las invitaciones anteriores siguen'
   Check (@(Get-ChildItem (Join-Path $Data 'backups') -Filter 'antes-de-actualizar-*.dump').Count -eq 1) 'Respaldo de seguridad antes de actualizar'
 
-  Section '5. Desinstalar conservando datos'
+  Section '5. Restaurar un respaldo (los comandos de docs/INSTALAR-PC.md)'
+  $dump = Get-ChildItem (Join-Path $Data 'backups') -Filter 'antes-de-actualizar-*.dump' | Select-Object -First 1
+  Invoke-Sql 'drop table zz_prueba_humo' | Out-Null
+  $cfg = Read-Env
+  Stop-Service SobremesaEncuestasApp
+  $env:PGPASSWORD = $cfg['LOCAL_DB_PASSWORD']
+  & (Join-Path $App 'pgsql\bin\pg_restore.exe') -h 127.0.0.1 -p $cfg['LOCAL_DB_PORT'] -U $cfg['LOCAL_DB_USER'] -d $cfg['LOCAL_DB_NAME'] --clean --if-exists --no-owner --exit-on-error $dump.FullName
+  $restoreCode = $LASTEXITCODE
+  $env:PGPASSWORD = $null
+  Start-Service SobremesaEncuestasApp
+  Check ($restoreCode -eq 0) 'pg_restore termina bien'
+  Check ((Invoke-Sql 'select nota from zz_prueba_humo') -eq 'sigo aqui') 'El respaldo devolvio los datos borrados'
+  $ok = $false
+  for ($i = 0; $i -lt 30 -and -not $ok; $i++) {
+    try { $ok = ((Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/api/health?db=1').StatusCode -eq 200) } catch { Start-Sleep -Seconds 2 }
+  }
+  Check $ok 'La app responde despues de restaurar'
+
+  Section '6. Desinstalar conservando datos'
   Invoke-Uninstall
   Check (-not (Get-Service -Name 'SobremesaEncuestasApp', 'SobremesaEncuestasDB' -ErrorAction SilentlyContinue)) 'Servicios eliminados'
   Check (-not (Get-NetFirewallRule -Name 'SobremesaEncuestas-HTTP' -ErrorAction SilentlyContinue)) 'Regla de firewall eliminada'
@@ -173,12 +191,12 @@ try {
   Check ((Test-Path (Join-Path $Data 'pgdata\PG_VERSION')) -and (Test-Path (Join-Path $Data '.env'))) 'Los datos se conservaron'
   Check (-not (Test-Path (Join-Path $App 'app\server.js'))) 'El programa se quito'
 
-  Section '6. Reinstalar sobre los datos conservados'
+  Section '7. Reinstalar sobre los datos conservados'
   Invoke-Setup 'reinstalar'
   Check-Running $true
   Check ((Invoke-Sql 'select nota from zz_prueba_humo') -eq 'sigo aqui') 'La reinstalacion uso la base que ya existia'
 
-  Section '7. Desinstalar borrando datos'
+  Section '8. Desinstalar borrando datos'
   & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $App 'tools\uninstall.ps1') -RemoveData
   Check ($LASTEXITCODE -eq 0) 'uninstall.ps1 -RemoveData termina bien'
   Check (-not (Test-Path $Data)) 'La carpeta de datos se borro'
