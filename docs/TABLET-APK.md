@@ -103,6 +103,7 @@ Instala el APK nuevo encima del anterior. Se conservan el servidor, la vinculaci
 - **Menú de la app**: mantén presionadas **las dos esquinas superiores a la vez durante 5 segundos** y escribe el PIN del restaurante. Muestra el servidor y la versión, y permite:
   - **Recargar la encuesta**.
   - **Cambiar servidor**: abre la pantalla de dirección con la actual escrita. Si hay respuestas sin enviar, avisa: se quedan guardadas en la tablet, pero solo se envían al volver a la dirección anterior.
+  - **Bloquear tablet** / **Desbloquear tablet**: fija la app en pantalla o la suelta (ver [sección 5](#fijar-pantalla-bloquear-tablet)).
 
   Pon los dos dedos al mismo tiempo. Si dejas uno solo en la esquina izquierda más de 3 segundos se abre el menú del personal; ciérralo e inténtalo otra vez.
 
@@ -116,9 +117,44 @@ Instala el APK nuevo encima del anterior. Se conservan el servidor, la vinculaci
 
 La app oculta las barras del sistema, pero Android no deja que una app normal bloquee los botones Inicio y Recientes: deslizando desde el borde de la pantalla reaparecen. Hay tres niveles, de menos a más:
 
-### Fijar pantalla
+### ¿Qué bloqueo uso?
 
-**Ajustes → Seguridad → Fijar apps** (el nombre cambia según la marca). Abre la app, entra a Recientes y elige **Fijar**. Para salir, Android pide el PIN de la tablet. Hay que repetirlo cada vez que la tablet se reinicia.
+| Bloqueo                              | Qué impide                                                                                                            | Qué no impide                                                                        | Al reiniciar la tablet                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Solo pantalla de inicio              | Que el botón Inicio saque de la encuesta.                                                                             | Recientes, notificaciones y Ajustes.                                                 | La app abre sola. No hay que hacer nada.                                                   |
+| Fijar pantalla (**Bloquear tablet**) | Inicio, Recientes y notificaciones. Con PIN de pantalla y "Pedir PIN para desfijar", salir exige el PIN de la tablet. | Apagar o reiniciar. Sin PIN de pantalla, cualquiera desfija con el gesto de Android. | Se pierde la fijación. La app vuelve a pedirla al abrirse y alguien debe aceptar el aviso. |
+| Bloqueo total (device owner)         | Todo lo anterior, sin avisos y sin forma de salir desde la tablet.                                                    | Nada relevante. A cambio exige restablecer la tablet de fábrica para activarlo.      | La app abre sola y queda bloqueada sin que nadie toque nada.                               |
+
+Para una tablet que ya está en uso, lo práctico es **pantalla de inicio + Bloquear tablet + PIN de pantalla**. Para tablets nuevas o que se puedan restablecer, el bloqueo total es el único que no depende de que alguien acepte un aviso.
+
+### Fijar pantalla (Bloquear tablet)
+
+La app puede pedirle a Android que la fije en pantalla, sin restablecer la tablet ni usar una computadora. Mientras está fijada no funcionan Inicio, Recientes ni las notificaciones.
+
+**Preparar la tablet (una sola vez):**
+
+1. **Ponle un PIN de pantalla a la tablet**: **Ajustes → Seguridad → Bloqueo de pantalla → PIN**. Que no sea el PIN del restaurante: ese lo conoce más gente.
+2. Activa **Ajustes → Seguridad → Fijar apps** y, dentro, **Pedir PIN para desfijar**. El nombre y el lugar cambian según la marca ("Fijar pantalla", "Fijar ventanas" en Samsung, a veces dentro de "Más ajustes de seguridad"); lo más rápido es buscar "fijar" en Ajustes.
+3. Deja la app como pantalla de inicio (ver [abajo](#usarla-como-pantalla-de-inicio)). Sin esto, la app no abre sola al reiniciar la tablet y nadie vuelve a pedir el bloqueo hasta que alguien la abra.
+
+**Activarlo:**
+
+1. Abre el menú de la app (dos esquinas, 5 segundos, PIN del restaurante) y toca **Bloquear tablet**.
+2. Android muestra su aviso de que la app quedará fijada. Toca **Entendido** (o **Iniciar**, según la versión).
+
+La app recuerda que la dejaste bloqueada: cada vez que se abre sin estar fijada (después de un reinicio, o si alguien la desfijó) vuelve a mostrar el aviso de Android. Si alguien responde **No, gracias**, la app no insiste; el menú de la app avisa que la pantalla no está fijada y **Bloquear tablet** sigue ahí para reintentar.
+
+**Quitarlo:** menú de la app → **Desbloquear tablet**. Si activaste "Pedir PIN para desfijar", la tablet pasa a su pantalla de bloqueo y pide el PIN de la tablet.
+
+**Límites frente al bloqueo total:**
+
+- **Android siempre pide confirmación.** Una app normal no puede fijarse sola, así que después de cada reinicio alguien del personal tiene que aceptar el aviso.
+- **Sin PIN de pantalla casi no protege.** Cualquiera puede desfijar con el gesto de Android (mantener Atrás y Recientes, o deslizar hacia arriba y mantener), y Android mismo muestra cómo hacerlo cuando alguien toca Atrás o Inicio. Con PIN y "Pedir PIN para desfijar", ese gesto solo lleva a la pantalla de bloqueo.
+- **Con PIN de pantalla, tras un reinicio la tablet se queda en la pantalla de bloqueo** hasta que alguien escriba el PIN. La encuesta no vuelve sola.
+- **El botón de encendido sigue funcionando**: se puede apagar o reiniciar la tablet.
+- **Depende de la marca.** Algunas tablets (ciertas Xiaomi, Huawei o Amazon Fire) esconden o quitan esta función. Si la tablet no la permite, la app lo avisa y sigue funcionando sin bloqueo.
+
+Si la tablet es device owner estas opciones no aparecen: ya tiene el bloqueo total.
 
 ### Usarla como pantalla de inicio
 
@@ -126,7 +162,7 @@ Presiona el botón Inicio; Android pregunta qué app usar como inicio. Elige **S
 
 Para deshacerlo: **Ajustes → Apps → Apps predeterminadas → App de inicio**.
 
-Esto no bloquea Recientes ni las notificaciones: alguien con intención todavía puede llegar a Ajustes.
+Esto no bloquea Recientes ni las notificaciones: alguien con intención todavía puede llegar a Ajustes. Combínalo con **Bloquear tablet** para cerrar esa puerta.
 
 ### Bloqueo total (device owner)
 
@@ -155,7 +191,7 @@ Pasos:
 4. Abre la app. Desde ese momento queda fija en pantalla y como pantalla de inicio. Configura el servidor y vincula la tablet como en la sección 3.
 5. Desactiva la depuración por USB si no la vas a usar.
 
-**Quitar el bloqueo total:** abre el menú de la app (dos esquinas, 5 segundos, PIN) y toca **Quitar el bloqueo total**. La app deja de ser device owner y la tablet vuelve a ser una tablet normal; después ya se puede desinstalar. Para activarlo de nuevo hay que repetir todo el proceso, con restablecimiento incluido.
+**Quitar el bloqueo total:** abre el menú de la app (dos esquinas, 5 segundos, PIN) y toca **Quitar el bloqueo total**. La app deja de ser device owner y la tablet vuelve a ser una tablet normal; después ya se puede desinstalar. Para activarlo de nuevo hay que repetir todo el proceso, con restablecimiento incluido. Al quitarlo también se olvida el "Bloquear tablet" que hubiera quedado guardado.
 
 ## 6. Problemas comunes
 
@@ -168,4 +204,7 @@ Pasos:
 | Nadie recuerda el PIN y hay que cambiar el servidor    | Cambia el PIN del restaurante en el panel; la tablet lo toma la siguiente vez que se conecte al servidor actual. Si ese servidor ya no existe, borra los datos de la app (**Ajustes → Apps → Sobremesa Tablet → Almacenamiento → Borrar datos**) y configúrala de nuevo. Se pierden las respuestas que no se habían enviado. |
 | "App no instalada" al actualizar                       | El APK está firmado con otra llave (por ejemplo, una compilación de prueba). Usa el APK del workflow.                                                                                                                                                                                                                        |
 | El workflow falla en "Comprobar secrets de firma"      | Falta alguno de los cuatro secrets de la sección 1.                                                                                                                                                                                                                                                                          |
-| Las barras del sistema reaparecen al deslizar          | Es el comportamiento normal de Android y se ocultan solas. Para impedirlo, usa el bloqueo total.                                                                                                                                                                                                                             |
+| Las barras del sistema reaparecen al deslizar          | Es el comportamiento normal de Android y se ocultan solas. Para impedirlo, usa **Bloquear tablet** o el bloqueo total.                                                                                                                                                                                                       |
+| El menú dice que la pantalla no está fijada            | Alguien respondió "No, gracias" al aviso de Android, o la tablet no permite fijar apps. Toca **Bloquear tablet** y acepta el aviso. Si no aparece ningún aviso, revisa que "Fijar apps" exista y esté activado en Ajustes.                                                                                                   |
+| Cualquiera puede salir de la app aunque esté bloqueada | Falta el PIN de pantalla o la opción "Pedir PIN para desfijar" (sección 5).                                                                                                                                                                                                                                                  |
+| Tras reiniciar, la tablet no vuelve a la encuesta      | Con PIN de pantalla hay que escribirlo primero. Después, la app solo abre sola si es la pantalla de inicio, y alguien debe aceptar el aviso de fijar.                                                                                                                                                                        |

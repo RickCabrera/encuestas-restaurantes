@@ -39,6 +39,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import org.json.JSONObject
 import org.json.JSONTokener
 
@@ -59,6 +60,8 @@ class MainActivity : Activity() {
     private var pendingResponses = 0
     private var dialog: AlertDialog? = null
     private val closeDialog = Runnable { dialog?.dismiss() }
+    // Ya se pidió fijar la pantalla desde que la app volvió a primer plano.
+    private var pinAsked = false
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -99,6 +102,7 @@ class MainActivity : Activity() {
             return
         }
         applyLockTask()
+        requestScreenPin()
         if (server != loadedServer) loadKiosk()
     }
 
@@ -112,6 +116,7 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(networkCallback)
+        pinAsked = false
         super.onStop()
     }
 
@@ -124,7 +129,11 @@ class MainActivity : Activity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) enterImmersive()
+        if (hasFocus) {
+            enterImmersive()
+            // Por si Android rechazó la petición en onResume porque la app aún no tenía el foco.
+            if (ServerConfig.server(this) != null) requestScreenPin()
+        }
     }
 
     // Modo kiosko: el botón atrás no hace nada.
@@ -299,9 +308,14 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(8), dp(24), 0)
         }
+        val owner = isDeviceOwner()
+        val pinned = isPinned()
+        val lockWanted = !owner && ScreenLock.wanted(this)
         content.addView(TextView(this).apply {
             text = getString(R.string.menu_server, server) + "\n" +
-                getString(R.string.version_label, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+                getString(R.string.version_label, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE) +
+                // Alguien respondió "No, gracias" al aviso de Android, o la tablet no deja fijar.
+                if (lockWanted && !pinned) "\n\n" + getString(R.string.lock_pending) else ""
             textSize = 16f
             setTextColor(getColor(R.color.ink_soft))
             setPadding(0, 0, 0, dp(12))
@@ -332,7 +346,12 @@ class MainActivity : Activity() {
                 Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_PENDING, pendingResponses),
             )
         }
-        if (isDeviceOwner()) option(R.string.menu_remove_owner, ::confirmRemoveOwner)
+        if (owner) {
+            option(R.string.menu_remove_owner, ::confirmRemoveOwner)
+        } else {
+            if (!pinned) option(R.string.menu_lock, ::lockScreen)
+            if (lockWanted || pinned) option(R.string.menu_unlock, ::unlockScreen)
+        }
         present(d)
     }
 
@@ -415,6 +434,45 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun isPinned(): Boolean =
+        getSystemService(ActivityManager::class.java).lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
+
+    /**
+     * Fijar pantalla, para tablets que no son "device owner": si el personal lo dejó activado se
+     * vuelve a pedir al abrir la app. Android siempre muestra su aviso de confirmación, así que
+     * se pide una sola vez por regreso a primer plano: si responden "No, gracias" no se insiste.
+     */
+    private fun requestScreenPin() {
+        if (pinAsked || isDeviceOwner() || !ScreenLock.wanted(this) || isPinned()) return
+        try {
+            startLockTask()
+            pinAsked = true
+        } catch (_: Exception) {
+            // La app todavía no está al frente: se reintenta al recibir el foco.
+        }
+    }
+
+    private fun lockScreen() {
+        ScreenLock.setWanted(this, true)
+        pinAsked = true
+        try {
+            startLockTask()
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.lock_unsupported, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun unlockScreen() {
+        ScreenLock.setWanted(this, false)
+        if (!isPinned()) return
+        try {
+            stopLockTask()
+        } catch (_: Exception) {
+            // La pantalla se fijó desde Recientes y Android no deja que la app la suelte.
+            Toast.makeText(this, R.string.unlock_manual, Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun confirmRemoveOwner() {
         val d = AlertDialog.Builder(this)
             .setTitle(R.string.remove_owner_title)
@@ -427,6 +485,8 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun removeOwner() {
+        // Que al dejar de ser device owner no se pida fijar la pantalla por una preferencia vieja.
+        ScreenLock.setWanted(this, false)
         try {
             stopLockTask()
             val dpm = getSystemService(DevicePolicyManager::class.java)

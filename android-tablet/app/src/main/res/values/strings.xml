@@ -29,6 +29,11 @@
     <string name="menu_server">Servidor: %1$s</string>
     <string name="menu_reload">Recargar la encuesta</string>
     <string name="menu_change_server">Cambiar servidor</string>
+    <string name="menu_lock">Bloquear tablet</string>
+    <string name="menu_unlock">Desbloquear tablet</string>
+    <string name="lock_pending">El bloqueo está activado, pero la pantalla no está fijada. Toca «Bloquear tablet» y acepta el aviso de Android.</string>
+    <string name="lock_unsupported">Esta tablet no permitió fijar la pantalla.</string>
+    <string name="unlock_manual">Android no dejó desfijar desde la app. Usa el gesto de Android para desfijar.</string>
     <string name="menu_remove_owner">Quitar el bloqueo total</string>
     <string name="menu_close">Cerrar</string>
     <string name="remove_owner_title">¿Quitar el bloqueo total?</string>
