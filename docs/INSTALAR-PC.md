@@ -39,7 +39,11 @@ Get-FileHash .\SobremesaEncuestas-Setup-1.2.0.exe -Algorithm SHA256
 1. Copia el `Setup.exe` a la PC y ábrelo con doble clic.
 2. **Aviso de SmartScreen.** Windows muestra "Windows protegió su PC" porque el instalador no tiene firma de código (un certificado de pago). Toca **Más información** y luego **Ejecutar de todas formas**. Si el botón no aparece, haz clic derecho en el archivo → **Propiedades** → marca **Desbloquear** → **Aceptar**, y ábrelo otra vez. Algún antivirus puede pedir una confirmación parecida.
 3. Acepta el aviso de permisos de administrador y sigue el asistente. La configuración tarda de uno a tres minutos.
-4. Al terminar se abre la página **Listo**.
+4. La última pantalla trae marcadas dos casillas. Déjalas así y toca **Finalizar**:
+   - **Abrir Sobremesa Encuestas** abre el sistema en su propia ventana. La primera vez te lleva directo a crear tu cadena y tu usuario maestro: escribes el nombre de la cadena, tu nombre, tu correo y una contraseña. No hay que copiar ningún enlace.
+   - **Ver los datos de la instalación** abre la página **Listo**, con la dirección para las tablets.
+
+El instalador deja el icono **Sobremesa Encuestas** en el Escritorio y en el menú Inicio (ver [Abrir el sistema](#abrir-el-sistema)).
 
 Lo que hace el instalador:
 
@@ -52,15 +56,24 @@ Lo que hace el instalador:
 
 ### La página "Listo"
 
-Muestra la versión instalada y tres datos:
+Muestra la versión instalada y:
 
 1. **La IP de la PC** en la red local.
-2. **La dirección que se escribe en las tablets**, por ejemplo `http://192.168.1.50:3000`. Es también la dirección del panel.
-3. **El enlace de un solo uso** para crear la cadena y su usuario maestro. Ábrelo en un navegador, escribe el nombre de la cadena, tu nombre, correo y contraseña. Vence en 7 días.
+2. **La dirección que se escribe en las tablets**, por ejemplo `http://192.168.1.50:3000`. Es también la dirección del panel desde otros equipos de la red. Hay un botón para copiarla, y el panel la repite en **Configuración → Tablets**.
+3. **El botón grande "Crear mi cadena"**, mientras no exista ningún usuario: abre el registro con todo listo. Debajo, en chico, queda el enlace de un solo uso (vence en 7 días) por si prefieres crear la cadena desde otro equipo de la red. Cuando ya hay usuarios, el botón dice **Abrir Sobremesa Encuestas**.
 
 La página solo la pueden leer los administradores de Windows; por eso se abre en una ventana propia y no en el navegador. Para verla de nuevo: menú Inicio → **Sobremesa Encuestas → Datos de la instalación (Listo)**.
 
 El panel muestra la versión instalada al pie del menú lateral.
+
+## Abrir el sistema
+
+Doble clic en **Sobremesa Encuestas**, en el Escritorio o en el menú Inicio. No pide permisos de administrador.
+
+- Se abre en una ventana propia, sin pestañas ni barra de direcciones (usa Microsoft Edge; si la PC no tiene Edge, abre el navegador predeterminado).
+- Si todavía no hay ningún usuario, lleva a crear la cadena y el usuario maestro. Si ya hay, a iniciar sesión.
+- Si la PC se acaba de encender y el sistema aún está arrancando, muestra **Iniciando…** y espera. Si los servicios estaban detenidos, los arranca. Si en minuto y medio no responde, lo dice y ofrece reintentar.
+- La sesión es por dirección: entrar en esta ventana (`localhost`) no deja la sesión abierta en `http://IP-de-la-PC:3000`, ni al revés. Cada equipo inicia sesión una vez.
 
 ## 3. Poner la red como "Privada"
 
@@ -105,7 +118,7 @@ Si no tienes acceso al router, la alternativa es poner una IP fija en Windows (*
 
 ## 5. Conectar las tablets
 
-Instala la app de tablets ([TABLET-APK.md](TABLET-APK.md)) y en **Dirección del servidor** escribe la dirección de la página "Listo", con todo y `http://` y `:3000`. La app ya permite conexiones `http` en la red local. Después vincula cada tablet desde el panel: **Configuración → Tablets → Agregar tablet**.
+Instala la app de tablets ([TABLET-APK.md](TABLET-APK.md)) y en **Dirección del servidor** escribe la dirección para las tablets, con todo y `http://` y `:3000`. Está en la página "Listo" y en el panel, arriba de **Configuración → Tablets**, con un botón para copiarla. La app ya permite conexiones `http` en la red local. Después vincula cada tablet desde el panel: **Configuración → Tablets → Agregar tablet**.
 
 ## Si la IP de la PC cambia
 
@@ -186,15 +199,15 @@ Los usuarios tendrán que iniciar sesión otra vez; las tablets siguen vinculada
 
 ## Accesos directos
 
-En el menú Inicio, carpeta **Sobremesa Encuestas**. Todos piden permisos de administrador de Windows.
+En el menú Inicio, carpeta **Sobremesa Encuestas**. El primero es el de todos los días y no pide permisos; los demás son de mantenimiento y piden permisos de administrador de Windows.
 
-| Acceso directo                              | Para qué                                                                                                                                                 |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Abrir el panel**                          | Abre `http://localhost:3000/admin` en el navegador de la PC. No pide permisos.                                                                           |
-| **Datos de la instalación (Listo)**         | La página "Listo": versión, IP, dirección para las tablets y avisos.                                                                                     |
-| **Generar enlace de alta nuevo**            | Crea otro enlace de un solo uso para dar de alta una cadena con su usuario maestro. Úsalo si el primero venció o ya se usó.                              |
-| **Restablecer contraseña de administrador** | Lista a los administradores del panel, pide el correo y la contraseña nueva (mínimo 8 caracteres). Cierra las sesiones abiertas de esa cuenta.           |
-| **Actualizar la IP**                        | Pone en el sistema la IP actual de la PC. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia).                                                     |
+| Acceso directo                              | Para qué                                                                                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sobremesa Encuestas**                     | Abre el sistema en su propia ventana. También está en el Escritorio. Ver [Abrir el sistema](#abrir-el-sistema).                                |
+| **Datos de la instalación (Listo)**         | La página "Listo": versión, IP, dirección para las tablets, avisos y el botón para crear la cadena.                                            |
+| **Generar enlace de alta nuevo**            | Crea otro enlace de un solo uso para dar de alta una cadena con su usuario maestro. Úsalo si el primero venció o ya se usó.                    |
+| **Restablecer contraseña de administrador** | Lista a los administradores del panel, pide el correo y la contraseña nueva (mínimo 8 caracteres). Cierra las sesiones abiertas de esa cuenta. |
+| **Actualizar la IP**                        | Pone en el sistema la IP actual de la PC. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia).                                           |
 
 Para una contraseña olvidada de un gerente (no administrador), un administrador se la cambia desde el panel: **Usuarios**.
 
@@ -217,41 +230,47 @@ En los dos casos se restaura la suspensión de la PC.
 
 ## Dónde está cada cosa
 
-| Qué                              | Dónde                                                                                         |
-| -------------------------------- | --------------------------------------------------------------------------------------------- |
-| Programa (se reemplaza al actualizar) | `C:\Program Files\Sobremesa Encuestas\`                                                  |
-| Configuración y secretos de la PC | `C:\ProgramData\SobremesaEncuestas\.env`                                                     |
-| Base de datos                    | `C:\ProgramData\SobremesaEncuestas\pgdata\`                                                   |
-| Respaldos                        | `C:\ProgramData\SobremesaEncuestas\backups\`                                                  |
-| Bitácoras                        | `C:\ProgramData\SobremesaEncuestas\logs\` (`instalacion.log`, `respaldo.log`, las de cada servicio y `postgres\`) |
-| Servicio de la aplicación        | `SobremesaEncuestasApp`, puerto 3000, cuenta `LocalService`                                   |
-| Servicio de la base              | `SobremesaEncuestasDB`, cuenta `NetworkService`                                               |
-| Respaldo diario                  | Programador de tareas → `Sobremesa Encuestas - Respaldo diario`                               |
-| Regla del firewall               | `Sobremesa Encuestas (puerto 3000)`, entrada, TCP 3000, perfil privado                        |
+| Qué                                   | Dónde                                                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Programa (se reemplaza al actualizar) | `C:\Program Files\Sobremesa Encuestas\`                                                                           |
+| Configuración y secretos de la PC     | `C:\ProgramData\SobremesaEncuestas\.env`                                                                          |
+| Base de datos                         | `C:\ProgramData\SobremesaEncuestas\pgdata\`                                                                       |
+| Respaldos                             | `C:\ProgramData\SobremesaEncuestas\backups\`                                                                      |
+| Bitácoras                             | `C:\ProgramData\SobremesaEncuestas\logs\` (`instalacion.log`, `respaldo.log`, las de cada servicio y `postgres\`) |
+| Servicio de la aplicación             | `SobremesaEncuestasApp`, puerto 3000, cuenta `LocalService`                                                       |
+| Servicio de la base                   | `SobremesaEncuestasDB`, cuenta `NetworkService`                                                                   |
+| Respaldo diario                       | Programador de tareas → `Sobremesa Encuestas - Respaldo diario`                                                   |
+| Regla del firewall                    | `Sobremesa Encuestas (puerto 3000)`, entrada, TCP 3000, perfil privado                                            |
+| Llave del acceso directo              | `C:\ProgramData\SobremesaEncuestas\publico\llave-inicio.txt` (la leen los usuarios de la PC)                      |
 
 Seguridad:
 
 - PostgreSQL solo acepta conexiones desde la propia PC (`127.0.0.1`), con contraseña, y usa el puerto 5433 (o el siguiente libre) para no chocar con otro PostgreSQL instalado. El puerto elegido queda en el `.env`.
 - Ningún servicio corre como administrador ni como `LocalSystem`.
 - El `.env`, los respaldos y la página "Listo" solo los leen los administradores de Windows y `SYSTEM`; el `.env`, además, la cuenta del servicio de la aplicación. **No copies el `.env` a otra PC ni lo compartas.**
+- Los usuarios de la PC que no son administradores pueden **arrancar** los dos servicios (para que el acceso directo los levante si están detenidos), pero no detenerlos ni cambiarlos.
+- El acceso directo entra por la dirección `/inicio`, que es la que decide si toca crear la cadena o iniciar sesión. Solo responde a la propia PC (no desde la red) y con una llave aleatoria guardada en ella. Mientras no exista ningún usuario, **cualquier persona con sesión de Windows en esa PC puede crear la cuenta maestra**: crea la tuya al terminar de instalar.
 
 ## Problemas comunes
 
-| Síntoma                                                                 | Qué revisar                                                                                                                                                                                                                                             |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| La tablet dice "No se pudo conectar con…" al guardar la dirección       | Que esté en el mismo Wi-Fi que la PC, que la dirección lleve `http://` y `:3000`, y que la red de la PC esté como **Privada** ([sección 3](#3-poner-la-red-como-privada)). Algunos routers aíslan el Wi-Fi de invitados: no lo uses para las tablets.    |
-| Funcionaba y de pronto todas las tablets dicen "Sin conexión"           | Que la PC esté encendida y despierta. Luego, que su IP no haya cambiado: abre **Datos de la instalación (Listo)**, que avisa si cambió.                                                                                                                 |
-| En la PC `http://localhost:3000` no abre                                | **Servicios** de Windows: `Sobremesa Encuestas - Base de datos` y `Sobremesa Encuestas - Aplicación` deben estar "En ejecución". Inícialos en ese orden y revisa las bitácoras.                                                                         |
-| El instalador avisa que el puerto 3000 está ocupado                     | Cierra o desinstala el programa que indica el aviso y vuelve a instalar.                                                                                                                                                                                 |
-| "Los archivos se copiaron, pero la configuración no terminó"            | Abre `C:\ProgramData\SobremesaEncuestas\logs\instalacion.log`: la última línea con `ERROR` dice el motivo. Vuelve a ejecutar el instalador después de corregirlo; retoma donde se quedó.                                                                |
-| Olvidé la contraseña del administrador                                  | Acceso directo **Restablecer contraseña de administrador**.                                                                                                                                                                                              |
-| El botón "Copiar" o la instalación como app (PWA) no funcionan igual que en la nube | Es por usar `http`. "Copiar" sí funciona; instalar la página como app y abrirla sin red, no. En las tablets usa la app Android.                                                                                                            |
+| Síntoma                                                                             | Qué revisar                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| La tablet dice "No se pudo conectar con…" al guardar la dirección                   | Que esté en el mismo Wi-Fi que la PC, que la dirección lleve `http://` y `:3000`, y que la red de la PC esté como **Privada** ([sección 3](#3-poner-la-red-como-privada)). Algunos routers aíslan el Wi-Fi de invitados: no lo uses para las tablets. |
+| Funcionaba y de pronto todas las tablets dicen "Sin conexión"                       | Que la PC esté encendida y despierta. Luego, que su IP no haya cambiado: abre **Datos de la instalación (Listo)**, que avisa si cambió.                                                                                                               |
+| El icono se queda en "Iniciando…" o dice "No se pudo iniciar"                       | Reinicia la PC. Si sigue, en **Servicios** de Windows `Sobremesa Encuestas - Base de datos` y `Sobremesa Encuestas - Aplicación` deben estar "En ejecución": inícialos en ese orden y revisa las bitácoras.                                           |
+| Entré en la PC y en otro equipo me vuelve a pedir contraseña                        | Es normal: la sesión es por dirección (`localhost` en la PC, `http://IP:3000` en los demás).                                                                                                                                                          |
+| El instalador avisa que el puerto 3000 está ocupado                                 | Cierra o desinstala el programa que indica el aviso y vuelve a instalar.                                                                                                                                                                              |
+| "Los archivos se copiaron, pero la configuración no terminó"                        | Abre `C:\ProgramData\SobremesaEncuestas\logs\instalacion.log`: la última línea con `ERROR` dice el motivo. Vuelve a ejecutar el instalador después de corregirlo; retoma donde se quedó.                                                              |
+| Olvidé la contraseña del administrador                                              | Acceso directo **Restablecer contraseña de administrador**.                                                                                                                                                                                           |
+| El botón "Copiar" o la instalación como app (PWA) no funcionan igual que en la nube | Es por usar `http`. "Copiar" sí funciona; instalar la página como app y abrirla sin red, no. En las tablets usa la app Android.                                                                                                                       |
 
 ## Para quien mantiene el instalador
 
 - Todo está en `installer/`. `installer\build.ps1 -Version 1.2.0` arma el paquete y, si Inno Setup 6 está instalado, el `Setup.exe` en `installer\build\out`. Con `-SkipSetup` solo arma el paquete; no instala nada en la PC donde corre.
+- El acceso directo es `SobremesaEncuestas.exe`, un programa pequeño (`installer/launcher/Launcher.cs`) que `build.ps1` compila con el `csc.exe` que trae Windows; no agrega dependencias. El icono es `installer/assets/sobremesa.ico` (se regenera con `make-icon.ps1`).
+- `npm run test:e2e:local` prueba el paquete ya armado (`build.ps1 -SkipSetup`) por `localhost` y por la IP de la red: login, cookie de sesión, sección Tablets y `/inicio`. No instala nada; usa la base de E2E.
 - `installer\smoke-test.ps1` **sí instala** servicios y PostgreSQL: es para el runner de GitHub Actions, no para una PC de trabajo.
 - Las versiones de Node, PostgreSQL y WinSW, con su SHA-256, están en `installer/versions.json`. Para subir una versión menor cambia la URL y el hash.
 - **No subas la versión mayor de PostgreSQL** (17 → 18) solo cambiando `versions.json`: la carpeta `pgdata` de las PCs instaladas es de la 17 y el instalador se niega a tocarla. Requiere un paso de migración (respaldo, base nueva y restauración).
-- La versión instalable se compila con `APP_MODE=local`. Lo que cambia respecto a la nube está en `src/lib/app-mode.ts` y `next.config.ts`: cookie de sesión sin `secure`, sin HSTS, sin pausa nocturna de las tablets y salida `standalone`.
+- La versión instalable se compila con `APP_MODE=local`. Lo que cambia respecto a la nube está en `src/lib/app-mode.ts` y `next.config.ts`: cookie de sesión sin `secure`, sin HSTS, sin pausa nocturna de las tablets y salida `standalone`. Solo en ese modo existen la ruta `/inicio` y el recuadro "Dirección para las tablets" de la sección Tablets. El servicio arranca la app con `local-server.cjs`, que pone en `x-forwarded-for` la IP real de cada conexión.
 - No cambies el `AppId` de `installer/setup.iss` ni los nombres de los servicios: son lo que permite actualizar encima.
