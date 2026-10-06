@@ -19,7 +19,10 @@ async function createInviteLink(page: Page, opts: { manager?: string } = {}) {
   }
   await dialog.getByRole("button", { name: "Generar enlace" }).click();
   const link = await dialog.getByLabel("Enlace de registro").inputValue();
-  expect(link).toMatch(/^http:\/\/localhost:\d+\/registro\?codigo=[A-Za-z0-9_-]{43}$/);
+  // El enlace lleva la dirección del servidor (APP_URL), que en las pruebas es la baseURL configurada.
+  const base = test.info().project.use.baseURL!.replace(/\/$/, "");
+  expect(link.startsWith(`${base}/registro?codigo=`)).toBe(true);
+  expect(link.slice(base.length)).toMatch(/^\/registro\?codigo=[A-Za-z0-9_-]{43}$/);
   await expect(dialog.getByText(/^Vence el .+\. Sirve para un solo registro\.$/)).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Copiar" })).toBeVisible();
   await dialog.getByRole("button", { name: "Cerrar" }).click();
