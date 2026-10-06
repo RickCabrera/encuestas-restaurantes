@@ -69,6 +69,9 @@ En Vercel → Domains, agrega `encuestas.cliente.com` y crea el CNAME que indica
      - **Android:** Ajustes → Seguridad → Fijar pantalla (o usa un MDM / app de kiosko).
      - **iPad:** Ajustes → Accesibilidad → Acceso guiado, y triple clic al abrir la app.
    - Pon la pantalla para que no se apague y deja la tablet conectada a la corriente.
+
+   En tablets Android puedes usar en su lugar la app dedicada, que ya abre a pantalla completa y mantiene la pantalla encendida: ver [TABLET-APK.md](TABLET-APK.md).
+
 3. Descarga los QR (PDF general o por mesa) desde la ficha del restaurante e imprímelos.
 
 ## 6. Monitoreo (US-9.6)

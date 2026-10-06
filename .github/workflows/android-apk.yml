@@ -1,0 +1,94 @@
+name: APK tablet
+
+# Compila el APK firmado de android-tablet/ y lo deja como artifact.
+# Instrucciones y secrets necesarios: docs/TABLET-APK.md
+on:
+  # "Run workflow" permite elegir cualquier rama, pero GitHub solo muestra ese botón cuando
+  # este archivo ya existe en la rama por defecto. Mientras no esté en main, el push a
+  # apk-tablet es lo que dispara la compilación.
+  workflow_dispatch:
+  push:
+    branches: [main, apk-tablet]
+    tags: ["tablet-v*"]
+    paths:
+      - "android-tablet/**"
+      - ".github/workflows/android-apk.yml"
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: android-tablet
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      # Cada compilación tiene un versionCode mayor, para instalar encima de la anterior.
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Comprobar secrets de firma
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Faltan secrets de firma:$missing. Ver docs/TABLET-APK.md"
+            exit 1
+          fi
+
+      - name: Versión desde el tag
+        if: startsWith(github.ref, 'refs/tags/tablet-v')
+        run: echo "VERSION_NAME=${GITHUB_REF_NAME#tablet-v}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Preparar keystore
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Compilar APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --console=plain
+
+      - name: Verificar firma y nombrar el APK
+        run: |
+          apk=app/build/outputs/apk/release/app-release.apk
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$build_tools/apksigner" verify --print-certs "$apk"
+          version=$("$build_tools/aapt2" dump badging "$apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          out="sobremesa-tablet-$version-$VERSION_CODE.apk"
+          mkdir -p dist
+          cp "$apk" "dist/$out"
+          (cd dist && sha256sum "$out" > "$out.sha256" && cat "$out.sha256")
+          echo "APK_NAME=$out" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.APK_NAME }}
+          path: android-tablet/dist/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Borrar keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"

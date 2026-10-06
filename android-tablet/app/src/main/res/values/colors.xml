@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Los mismos tonos que src/app/globals.css de la app web. -->
+    <color name="paper">#F3F5F2</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#1C2621</color>
+    <color name="ink_soft">#56625B</color>
+    <color name="ink_faint">#8A958E</color>
+    <color name="line">#D9DFDA</color>
+    <color name="basil">#2F6B4F</color>
+    <color name="chile">#B8412B</color>
+    <color name="mustard_tint">#FBF1D9</color>
+</resources>
