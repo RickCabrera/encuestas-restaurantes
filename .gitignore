@@ -49,3 +49,6 @@ next-env.d.ts
 # app Android de las tablets: la firma va en GitHub Secrets (docs/TABLET-APK.md)
 *.jks
 *.keystore
+
+# instalador de Windows: descargas y paquete (docs/INSTALAR-PC.md)
+/installer/build/
