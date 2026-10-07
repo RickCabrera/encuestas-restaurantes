@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
 import { users, type User } from "@/db/schema";
+import { secureCookies } from "./app-mode";
 import { buildSessionUser, type SessionUser } from "./session-user";
 
 export type { SessionUser };
@@ -34,7 +35,7 @@ export async function createSession(user: Pick<User, "id" | "sessionVersion">) {
   const jar = await cookies();
   jar.set(COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies(),
     sameSite: "lax",
     path: "/",
     maxAge: days * 24 * 3600,

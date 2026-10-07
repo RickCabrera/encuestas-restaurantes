@@ -5,7 +5,7 @@ La app de `android-tablet/` abre el modo tablet (`<servidor>/kiosk`) a pantalla 
 - Pantalla siempre encendida, sin barras del sistema y con el botón atrás deshabilitado.
 - Recuerda el servidor, la vinculación y las respuestas pendientes entre reinicios.
 - Si no logra abrir el servidor muestra "Sin conexión, reintentando" y prueba de nuevo cada 10 segundos.
-- Funciona con `https://` y también con `http://` en la red local.
+- Funciona con `https://` y también con `http://` en la red local (la versión instalada en una PC: [INSTALAR-PC.md](INSTALAR-PC.md)).
 
 Requiere Android 7 o posterior. El código de la app web no cambia: la tablet se vincula igual que en el navegador (ver [MANUAL.md](MANUAL.md#tablets-del-restaurante)).
 

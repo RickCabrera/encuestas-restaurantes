@@ -1,0 +1,82 @@
+name: Instalador PC
+
+# Arma el Setup.exe de Windows (installer/), lo prueba en el runner y lo deja como artifact.
+# Instrucciones: docs/INSTALAR-PC.md
+on:
+  # "Run workflow" solo aparece cuando este archivo ya está en la rama por defecto. Mientras
+  # no esté en main, lo dispara el push a instalador-pc.
+  workflow_dispatch:
+  push:
+    branches: [main, instalador-pc]
+    tags: ["pc-v*"]
+    paths:
+      - "installer/**"
+      - ".github/workflows/instalador-pc.yml"
+
+concurrency:
+  group: instalador-pc-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        # Windows PowerShell 5.1: el mismo que usan los scripts en la PC del restaurante.
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Versión
+        run: |
+          # Con el tag pc-v1.2.0 la versión es 1.2.0; si no, 1.0.<número de corrida>.
+          if ($env:GITHUB_REF -like 'refs/tags/pc-v*') { $version = $env:GITHUB_REF_NAME.Substring(4) } else { $version = "1.0.$env:GITHUB_RUN_NUMBER" }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Versión: $version"
+
+      - name: Caché de descargas (Node, PostgreSQL, WinSW)
+        uses: actions/cache@v4
+        with:
+          path: installer/build/cache
+          key: instalador-descargas-${{ hashFiles('installer/versions.json') }}
+
+      - name: Inno Setup
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y; if ($LASTEXITCODE -ne 0) { exit 1 } }
+          Write-Host "Inno Setup: $((Get-Item $iscc).VersionInfo.ProductVersion)"
+
+      - name: Compilar el Setup.exe
+        run: .\installer\build.ps1 -Version $env:VERSION
+
+      - name: Prueba de humo (instalar, actualizar, desinstalar)
+        run: |
+          $setup = Get-ChildItem installer\build\out\*.exe | Select-Object -First 1
+          .\installer\smoke-test.ps1 -Setup $setup.FullName -Version $env:VERSION
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: SobremesaEncuestas-Setup-${{ env.VERSION }}
+          path: installer/build/out/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Bitácoras de la prueba
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: bitacoras-instalador
+          path: ${{ runner.temp }}/instalador-logs
+          if-no-files-found: ignore
+          retention-days: 7

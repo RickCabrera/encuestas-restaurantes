@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Sobremesa Encuestas - Listo</title>
+    <style>
+      body { font-family: "Segoe UI", Arial, sans-serif; color: #1c2621; background: #f6f3ec; margin: 0; padding: 28px 36px; font-size: 16px; line-height: 1.5; }
+      h1 { font-size: 30px; margin: 0 0 4px; color: #2f6b4f; }
+      h2 { font-size: 19px; margin: 28px 0 6px; }
+      p { margin: 6px 0; }
+      .version { color: #5c6a63; font-size: 14px; margin-bottom: 18px; }
+      .value { font-family: Consolas, "Courier New", monospace; font-size: 24px; font-weight: bold; background: #ffffff; border: 1px solid #d9d4c7; padding: 10px 14px; margin: 8px 0; word-wrap: break-word; }
+      .value.small { font-size: 15px; font-weight: normal; }
+      .note { color: #5c6a63; font-size: 14px; }
+      .link { font-family: Consolas, "Courier New", monospace; font-size: 12px; word-wrap: break-word; }
+      .warn { background: #fff3cd; border: 1px solid #e0b94a; padding: 12px 14px; margin: 14px 0; }
+      ul { margin: 6px 0 6px 22px; padding: 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Listo</h1>
+    <p class="version">Sobremesa Encuestas, versión {{VERSION}} &middot; {{DATE}}</p>
+
+    {{WARNINGS}}
+
+    <h2>1. IP de esta PC en la red local</h2>
+    <p class="value">{{IP}}</p>
+    <p class="note">Resérvala en el router para que no cambie (INSTALAR-PC, "Fijar la IP").</p>
+
+    <h2>2. Dirección que se escribe en las tablets</h2>
+    <p class="value">{{TABLET_URL}}</p>
+    <p class="note">Es la misma dirección del panel, desde cualquier equipo conectado a la red del restaurante.</p>
+
+    {{INVITE}}
+
+    <h2>Para tener en cuenta</h2>
+    <ul>
+      <li>Esta PC es el servidor: déjala encendida mientras el restaurante esté abierto. El instalador desactivó la suspensión con corriente.</li>
+      <li>Cada día se guarda un respaldo en <strong>{{BACKUPS}}</strong> (se conservan 14). Copia esa carpeta a una USB de vez en cuando.</li>
+      <li>La dirección para las tablets también está en el panel, en la sección Tablets.</li>
+      <li>Esta página se vuelve a abrir desde el menú Inicio: Sobremesa Encuestas &gt; Datos de la instalación.</li>
+    </ul>
+  </body>
+</html>

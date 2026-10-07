@@ -6,7 +6,7 @@ Sistema para que un grupo de restaurantes cree encuestas de satisfacción por su
 - **Encuesta pública** (`/r/<restaurante>`): la que abre el QR, sin login.
 - **Modo tablet** (`/kiosk`): app instalable que se vincula con un código de 6 dígitos, se reinicia sola entre comensales y guarda respuestas sin internet.
 
-La guía de despliegue está en [`docs/DEPLOY.md`](docs/DEPLOY.md), el manual para el cliente en [`docs/MANUAL.md`](docs/MANUAL.md) y el backlog original en [`docs/backlog.md`](docs/backlog.md).
+La guía de despliegue está en [`docs/DEPLOY.md`](docs/DEPLOY.md), la versión instalable en una PC con Windows en [`docs/INSTALAR-PC.md`](docs/INSTALAR-PC.md), el manual para el cliente en [`docs/MANUAL.md`](docs/MANUAL.md) y el backlog original en [`docs/backlog.md`](docs/backlog.md).
 
 ## Stack
 
@@ -14,7 +14,7 @@ La guía de despliegue está en [`docs/DEPLOY.md`](docs/DEPLOY.md), el manual pa
 | ----------------- | --------------------------------------------------------------- |
 | Framework         | Next.js 16 (App Router, Server Actions) + React 19 + TypeScript |
 | UI                | Tailwind CSS 4, componentes propios, Recharts, lucide-react     |
-| Base de datos     | PostgreSQL 16 (Supabase o Neon en producción)                   |
+| Base de datos     | PostgreSQL 17 (Supabase o Neon en producción)                   |
 | ORM / migraciones | Drizzle ORM + drizzle-kit (SQL versionado en `drizzle/`)        |
 | Auth              | Sesión propia: JWT HS256 (`jose`) en cookie httpOnly + bcrypt   |
 | Validación        | Zod 4 (compartida entre cliente y servidor)                     |
@@ -74,7 +74,7 @@ Para las pruebas locales crea una vez las bases: `createdb encuestas_test && cre
 
 ## Variables de entorno
 
-Documentadas en [`.env.example`](.env.example). Mínimo para producción: `DATABASE_URL`, `AUTH_SECRET` (32+ caracteres) y `APP_URL`. Opcionales: `DIRECT_DATABASE_URL` (migraciones sin pooler), `RESEND_API_KEY` + `EMAIL_FROM` (correos), `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN`, `APP_TIMEZONE` (por defecto `America/Mexico_City`) y `SESSION_DAYS`.
+Documentadas en [`.env.example`](.env.example). Mínimo para producción: `DATABASE_URL`, `AUTH_SECRET` (32+ caracteres) y `APP_URL`. Opcionales: `DIRECT_DATABASE_URL` (migraciones sin pooler), `RESEND_API_KEY` + `EMAIL_FROM` (correos), `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN`, `APP_TIMEZONE` (por defecto `America/Mexico_City`) y `SESSION_DAYS`. `APP_MODE=local` es solo para la versión instalada en PC (http en red local); en la nube no se define.
 
 ## Arquitectura
 

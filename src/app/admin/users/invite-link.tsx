@@ -4,6 +4,7 @@ import { startTransition, useActionState, useRef, useState } from "react";
 import { createInviteAction, type InviteState } from "@/app/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { isLocalMode } from "@/lib/app-mode";
 
 type Restaurant = { id: string; name: string };
 
@@ -102,7 +103,8 @@ function LinkDisplay({ link, expiresLabel }: { link: string; expiresLabel: strin
       setCopied(true);
     } catch {
       // Sin permiso de portapapeles: el enlace queda seleccionado para copiarlo a mano.
-      setCopied(false);
+      // En modo local (http) no existe navigator.clipboard: se copia la selección.
+      setCopied(isLocalMode() && document.execCommand("copy"));
     }
   };
   return (
