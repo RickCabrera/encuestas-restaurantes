@@ -75,6 +75,16 @@ cd android-tablet
 
 El APK queda en `app/build/outputs/apk/debug/`. Es una compilación de prueba, firmada con una llave distinta: no se puede instalar encima de la versión firmada por el workflow.
 
+### Pruebas de la app
+
+```bash
+cd android-tablet
+./gradlew testDebugUnitTest            # geometría del gesto de dos esquinas; también corre en el workflow
+./gradlew connectedDebugAndroidTest    # necesita un emulador abierto o una tablet conectada por adb
+```
+
+La segunda hace los dos gestos (menú del personal y menú de la app) con la pantalla sin fijar, fijada, y después de rechazar el aviso de Android. Desinstala la app del equipo donde corre: úsala en un emulador, no en una tablet en servicio.
+
 ## 3. Instalar en la tablet
 
 1. Copia el `.apk` a la tablet (USB, correo o una liga de descarga) y ábrelo. Android pedirá permitir la instalación desde esa fuente: acéptalo.
@@ -100,25 +110,81 @@ Instala el APK nuevo encima del anterior. Se conservan el servidor, la vinculaci
 ## 4. Uso diario
 
 - **Menú del personal** (el de siempre): esquina superior izquierda, 3 segundos, con el PIN del restaurante. Actualiza la encuesta, envía pendientes o desvincula la tablet.
-- **Menú de la app**: mantén presionadas **las dos esquinas superiores a la vez durante 5 segundos** y escribe el PIN del restaurante. Muestra el servidor y la versión, y permite:
+- **Menú de la app**: mantén presionadas **las dos esquinas superiores a la vez durante 5 segundos** y escribe el PIN del restaurante. Muestra el servidor, la versión y el **Estado del bloqueo** (si la tablet tiene el bloqueo total y si la pantalla está fijada), y permite:
   - **Recargar la encuesta**.
-  - **Cambiar servidor**: abre la pantalla de dirección con la actual escrita. Si hay respuestas sin enviar, avisa: se quedan guardadas en la tablet, pero solo se envían al volver a la dirección anterior.
+  - **Cambiar servidor**: abre la pantalla de dirección con la actual escrita. Si hay respuestas sin enviar, avisa: se quedan guardadas en la tablet, pero solo se envían al volver a la dirección anterior. En el servidor nuevo la tablet empieza sin vincular y pide código.
+  - **Desvincular esta tablet**: para pasarla a otro restaurante o a otra cadena del mismo servidor (ver [Pasar la tablet a otro restaurante](#pasar-la-tablet-a-otro-restaurante-o-cadena)).
+  - **Bloquear tablet** / **Desbloquear tablet**: fija la app en pantalla o la suelta. Es un bloqueo básico, para demos (ver [sección 5](#fijar-pantalla-bloquear-tablet)).
+  - **Quitar el bloqueo total**: solo aparece si la tablet es device owner.
 
   Pon los dos dedos al mismo tiempo. Si dejas uno solo en la esquina izquierda más de 3 segundos se abre el menú del personal; ciérralo e inténtalo otra vez.
 
   Si la tablet todavía no está vinculada no hay PIN que pedir, y el menú de la app abre directo.
 
+  Los dos menús comprueban con el servidor que la tablet siga vinculada antes de pedir el PIN. El menú de la app nunca espera más de un segundo: si el servidor no contesta, abre con el PIN que ya tenía guardado.
+
 - **Sin conexión.** Con la encuesta ya abierta, la tablet sigue recibiendo respuestas sin internet y las envía cuando vuelve (igual que en el navegador). La pantalla "Sin conexión, reintentando" solo aparece cuando la app no logra abrir el servidor, por ejemplo al encenderla sin red. Desde esa pantalla también funciona el gesto de las dos esquinas, por si la dirección cambió.
 
   Con un servidor `http://` en red local la tablet no puede arrancar sin red (el navegador solo guarda la página para uso sin conexión cuando la dirección es `https://`). Una vez abierta, sí sigue funcionando si la red se cae.
 
-## 5. Bloquear la tablet (opcional)
+### Pasar la tablet a otro restaurante o cadena
 
-La app oculta las barras del sistema, pero Android no deja que una app normal bloquee los botones Inicio y Recientes: deslizando desde el borde de la pantalla reaparecen. Hay tres niveles, de menos a más:
+1. En la tablet, abre el menú del personal o el menú de la app y toca **Desvincular esta tablet**.
+2. La tablet intenta enviar primero las respuestas pendientes. Si no puede (sin internet), dice cuántas se perderían y pregunta otra vez; puedes cancelar y reintentar con conexión.
+3. Al confirmar, la tablet vuelve a **Vincular tablet** y en el panel aparece como "Sin vincular".
+4. En el panel del restaurante o la cadena nueva: **Tablets → Agregar tablet**, y escribe ese código en la tablet.
 
-### Fijar pantalla
+Si la desvinculas o la eliminas **desde el panel**, la tablet lo nota sola y vuelve a pedir código: al iniciar la siguiente encuesta, al abrir cualquiera de los dos menús, al volver la app a primer plano, o en la siguiente consulta automática (cada 30 minutos en la nube, cada minuto en la versión instalada en PC).
 
-**Ajustes → Seguridad → Fijar apps** (el nombre cambia según la marca). Abre la app, entra a Recientes y elige **Fijar**. Para salir, Android pide el PIN de la tablet. Hay que repetirlo cada vez que la tablet se reinicia.
+Si la página de la encuesta no está abierta ("Sin conexión, reintentando"), **Desvincular esta tablet** solo borra lo guardado en la tablet; en el panel seguirá como vinculada hasta que la desvincules ahí.
+
+## 5. Bloquear la tablet
+
+La app oculta las barras del sistema, pero Android no deja que una app normal bloquee los botones Inicio y Recientes: deslizando desde el borde de la pantalla reaparecen. Hay tres niveles, de menos a más.
+
+**Para una tablet de restaurante, usa el [bloqueo total (device owner)](#bloqueo-total-device-owner).** Es el único sin aviso de Android y sin gesto de salida: solo se sale desde el menú de la app, con el PIN del restaurante. **Bloquear tablet** (fijar pantalla) es un bloqueo básico, solo para una demo o un equipo prestado que no se puede restablecer.
+
+### ¿Qué bloqueo uso?
+
+| Bloqueo                                          | Qué impide                                                                                                                       | Qué no impide                                                                        | Al reiniciar la tablet                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Solo pantalla de inicio                          | Que el botón Inicio saque de la encuesta.                                                                                        | Recientes, notificaciones y Ajustes.                                                 | La app abre sola. No hay que hacer nada.                                                   |
+| Fijar pantalla (**Bloquear tablet**)             | Inicio, Recientes y notificaciones. Con PIN de pantalla y "Pedir PIN para desfijar", salir exige el PIN de la tablet.            | Apagar o reiniciar. Sin PIN de pantalla, cualquiera desfija con el gesto de Android. | Se pierde la fijación. La app vuelve a pedirla al abrirse y alguien debe aceptar el aviso. |
+| **Bloqueo total (device owner)**: el recomendado | Todo lo anterior, sin aviso de Android y sin gesto de salida. Solo se quita desde el menú de la app, con el PIN del restaurante. | Nada relevante. A cambio exige restablecer la tablet de fábrica para activarlo.      | La app abre sola y queda bloqueada sin que nadie toque nada.                               |
+
+El menú de la app dice cuál tiene la tablet, en **Estado del bloqueo**: "Bloqueo total (device owner): sí/no" y "Pantalla fijada: sí/no".
+
+### Fijar pantalla (Bloquear tablet)
+
+**Solo para demos o equipos prestados.** La app puede pedirle a Android que la fije en pantalla, sin restablecer la tablet ni usar una computadora. Mientras está fijada no funcionan Inicio, Recientes ni las notificaciones, pero se puede salir con el gesto de Android; el menú de la app lo recuerda con el aviso "Bloqueo básico" y lo repite antes de bloquear.
+
+**Preparar la tablet (una sola vez):**
+
+1. **Ponle un PIN de pantalla a la tablet**: **Ajustes → Seguridad → Bloqueo de pantalla → PIN**. Que no sea el PIN del restaurante: ese lo conoce más gente.
+2. Activa **Ajustes → Seguridad → Fijar apps** y, dentro, **Pedir PIN para desfijar**. El nombre y el lugar cambian según la marca ("Fijar pantalla", "Fijar ventanas" en Samsung, a veces dentro de "Más ajustes de seguridad"); lo más rápido es buscar "fijar" en Ajustes.
+3. Deja la app como pantalla de inicio (ver [abajo](#usarla-como-pantalla-de-inicio)). Sin esto, la app no abre sola al reiniciar la tablet y nadie vuelve a pedir el bloqueo hasta que alguien la abra.
+
+**Activarlo:**
+
+1. Abre el menú de la app (dos esquinas, 5 segundos, PIN del restaurante) y toca **Bloquear tablet**.
+2. La app avisa que es un bloqueo básico. Toca **Bloquear**.
+3. Android muestra su aviso de que la app quedará fijada. Toca **Entendido** (o **Iniciar**, según la versión).
+
+La app recuerda que la dejaste bloqueada: cuando vuelve a primer plano sin estar fijada (después de un reinicio, o si alguien la desfijó) muestra otra vez el aviso de Android, una sola vez.
+
+Mientras ese aviso está abierto tapa la encuesta y hay que responderlo. La app no abre ningún menú debajo; si hiciste el gesto del menú de la app, lo abre en cuanto el aviso se cierra. Si alguien responde **No, gracias**, la app olvida el bloqueo y no vuelve a mostrar el aviso al regresar: para bloquear de nuevo hay que tocar **Bloquear tablet**.
+
+**Quitarlo:** menú de la app → **Desbloquear tablet**. Si activaste "Pedir PIN para desfijar", la tablet pasa a su pantalla de bloqueo y pide el PIN de la tablet.
+
+**Límites frente al bloqueo total:**
+
+- **Android siempre pide confirmación.** Una app normal no puede fijarse sola, así que después de cada reinicio alguien del personal tiene que aceptar el aviso.
+- **Sin PIN de pantalla casi no protege.** Cualquiera puede desfijar con el gesto de Android (mantener Atrás y Recientes, o deslizar hacia arriba y mantener), y Android mismo muestra cómo hacerlo cuando alguien toca Atrás o Inicio. Con PIN y "Pedir PIN para desfijar", ese gesto solo lleva a la pantalla de bloqueo.
+- **Con PIN de pantalla, tras un reinicio la tablet se queda en la pantalla de bloqueo** hasta que alguien escriba el PIN. La encuesta no vuelve sola.
+- **El botón de encendido sigue funcionando**: se puede apagar o reiniciar la tablet.
+- **Depende de la marca.** Algunas tablets (ciertas Xiaomi, Huawei o Amazon Fire) esconden o quitan esta función. Si la tablet no la permite, la app lo avisa y sigue funcionando sin bloqueo.
+
+Si la tablet es device owner estas opciones no aparecen: ya tiene el bloqueo total.
 
 ### Usarla como pantalla de inicio
 
@@ -126,11 +192,11 @@ Presiona el botón Inicio; Android pregunta qué app usar como inicio. Elige **S
 
 Para deshacerlo: **Ajustes → Apps → Apps predeterminadas → App de inicio**.
 
-Esto no bloquea Recientes ni las notificaciones: alguien con intención todavía puede llegar a Ajustes.
+Esto no bloquea Recientes ni las notificaciones: alguien con intención todavía puede llegar a Ajustes. Combínalo con **Bloquear tablet** para cerrar esa puerta.
 
 ### Bloqueo total (device owner)
 
-Registrar la app como "propietaria del dispositivo" le permite a Android bloquear de verdad la tablet: sin Inicio, sin Recientes, sin notificaciones, y la app vuelve a abrir sola al reiniciar.
+**Es el bloqueo recomendado para las tablets de un restaurante.** Registrar la app como "propietaria del dispositivo" le permite a Android bloquear de verdad la tablet: sin Inicio, sin Recientes, sin notificaciones, sin aviso de Android y sin gesto de salida, y la app vuelve a abrir sola y bloqueada al reiniciar. Solo se quita desde el menú de la app, con el PIN del restaurante.
 
 **Antes de hacerlo, toma en cuenta:**
 
@@ -139,23 +205,44 @@ Registrar la app como "propietaria del dispositivo" le permite a Android bloquea
 - Mientras la app sea device owner **no se puede desinstalar**. Sí se puede actualizar instalando un APK nuevo encima.
 - La tablet queda dedicada a las encuestas. Para usarla en otra cosa hay que quitar el bloqueo (abajo) o restablecerla de fábrica.
 
-Pasos:
+Necesitas una computadora con `adb` (viene en las [platform-tools de Android](https://developer.android.com/tools/releases/platform-tools)), un cable USB y el `.apk`.
 
-1. Restablece la tablet de fábrica y termina la configuración inicial **sin agregar cuenta de Google** (el Wi-Fi sí puedes configurarlo).
-2. Activa las opciones de desarrollador (**Ajustes → Acerca de la tablet →** toca 7 veces **Número de compilación**) y dentro de ellas, **Depuración por USB**.
-3. Conecta la tablet a una computadora con `adb` y ejecuta:
+**Pasos, en este orden:**
+
+1. **Restablece la tablet de fábrica**: **Ajustes → Sistema → Opciones de restablecimiento → Borrar todos los datos**.
+2. Termina la configuración inicial **sin agregar ninguna cuenta de Google** (toca "Omitir" o "Configurar sin conexión"). El Wi-Fi sí puedes configurarlo. Tampoco agregues cuentas de la marca (Samsung, Xiaomi).
+3. **Activa la depuración por USB**: **Ajustes → Acerca de la tablet →** toca 7 veces **Número de compilación**; después, en **Ajustes → Sistema → Opciones para desarrolladores**, enciende **Depuración por USB**.
+4. Conecta la tablet a la computadora y acepta en la tablet el aviso "¿Permitir depuración por USB?". Comprueba que la computadora la ve:
+
+   ```bash
+   adb devices
+   ```
+
+   Debe aparecer una línea que termina en `device` (no en `unauthorized`).
+
+5. Instala la app y regístrala como device owner. El comando es exactamente este:
 
    ```bash
    adb install sobremesa-tablet-1.0.0-37.apk
    adb shell dpm set-device-owner mx.sitirt.encuestas.tablet/.AdminReceiver
    ```
 
-   Debe responder `Success: Device owner set to package mx.sitirt.encuestas.tablet`. Si dice que ya hay cuentas en el dispositivo, falta el restablecimiento o quedó una cuenta agregada.
+   Debe responder `Success: Device owner set to package mx.sitirt.encuestas.tablet`. Si dice `Not allowed to set the device owner because there are already some accounts on the device`, quedó una cuenta agregada: quítala en **Ajustes → Cuentas** o restablece otra vez.
 
-4. Abre la app. Desde ese momento queda fija en pantalla y como pantalla de inicio. Configura el servidor y vincula la tablet como en la sección 3.
-5. Desactiva la depuración por USB si no la vas a usar.
+6. **Comprueba que quedó:**
 
-**Quitar el bloqueo total:** abre el menú de la app (dos esquinas, 5 segundos, PIN) y toca **Quitar el bloqueo total**. La app deja de ser device owner y la tablet vuelve a ser una tablet normal; después ya se puede desinstalar. Para activarlo de nuevo hay que repetir todo el proceso, con restablecimiento incluido.
+   ```bash
+   adb shell dumpsys device_policy
+   ```
+
+   Cerca del principio debe decir `Device Owner:` con `mx.sitirt.encuestas.tablet`. Sin computadora: en el menú de la app, **Estado del bloqueo** debe decir "Bloqueo total (device owner): sí".
+
+7. Abre la app. Desde ese momento queda fija en pantalla y como pantalla de inicio, sin aviso de Android. Configura el servidor y vincula la tablet como en la sección 3. Comprueba que Inicio y Recientes no hacen nada y que no baja la barra de notificaciones.
+8. Apaga la depuración por USB.
+
+Si nadie recuerda el PIN del restaurante, cámbialo en el panel (la tablet lo toma al conectarse). Si la tablet ya no puede conectarse a su servidor, la única salida es restablecerla de fábrica desde el modo de recuperación (apagada, botón de encendido + volumen; cambia según la marca).
+
+**Quitar el bloqueo total:** abre el menú de la app (dos esquinas, 5 segundos, PIN del restaurante) y toca **Quitar el bloqueo total**. La app deja de ser device owner y la tablet vuelve a ser una tablet normal; después ya se puede desinstalar. Para activarlo de nuevo hay que repetir todo el proceso, con restablecimiento incluido. Al quitarlo también se olvida el "Bloquear tablet" que hubiera quedado guardado.
 
 ## 6. Problemas comunes
 
@@ -168,4 +255,9 @@ Pasos:
 | Nadie recuerda el PIN y hay que cambiar el servidor    | Cambia el PIN del restaurante en el panel; la tablet lo toma la siguiente vez que se conecte al servidor actual. Si ese servidor ya no existe, borra los datos de la app (**Ajustes → Apps → Sobremesa Tablet → Almacenamiento → Borrar datos**) y configúrala de nuevo. Se pierden las respuestas que no se habían enviado. |
 | "App no instalada" al actualizar                       | El APK está firmado con otra llave (por ejemplo, una compilación de prueba). Usa el APK del workflow.                                                                                                                                                                                                                        |
 | El workflow falla en "Comprobar secrets de firma"      | Falta alguno de los cuatro secrets de la sección 1.                                                                                                                                                                                                                                                                          |
-| Las barras del sistema reaparecen al deslizar          | Es el comportamiento normal de Android y se ocultan solas. Para impedirlo, usa el bloqueo total.                                                                                                                                                                                                                             |
+| Las barras del sistema reaparecen al deslizar          | Es el comportamiento normal de Android y se ocultan solas. Para impedirlo, usa **Bloquear tablet** o el bloqueo total.                                                                                                                                                                                                       |
+| No responde nada y hay un aviso de Android en pantalla | Es el aviso de fijar la pantalla: tapa la app hasta que alguien toca **Entendido** o **No, gracias**.                                                                                                                                                                                                                        |
+| La tablet pide un PIN que nadie conoce                 | Es el PIN del restaurante al que está vinculada. Si la desvinculas desde el panel, la tablet lo nota al abrir el menú y deja de pedirlo.                                                                                                                                                                                     |
+| "Pantalla fijada: no" aunque la habías bloqueado       | Alguien respondió "No, gracias" al aviso de Android, o la tablet no permite fijar apps. Toca **Bloquear tablet** y acepta el aviso. Si no aparece ningún aviso, revisa que "Fijar apps" exista y esté activado en Ajustes.                                                                                                   |
+| Cualquiera puede salir de la app aunque esté bloqueada | Falta el PIN de pantalla o la opción "Pedir PIN para desfijar" (sección 5).                                                                                                                                                                                                                                                  |
+| Tras reiniciar, la tablet no vuelve a la encuesta      | Con PIN de pantalla hay que escribirlo primero. Después, la app solo abre sola si es la pantalla de inicio, y alguien debe aceptar el aviso de fijar.                                                                                                                                                                        |

@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "public/sw.js",
     "installer/build/**",
+    // Reportes y salidas de Gradle (la app Android no es JavaScript).
+    "android-tablet/**/build/**",
   ]),
 ]);
 

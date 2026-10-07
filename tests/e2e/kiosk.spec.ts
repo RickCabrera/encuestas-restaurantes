@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { answerBaseSurvey, clearRateLimits, login } from "./helpers";
+import { answerBaseSurvey, clearRateLimits, deviceTokenHash, login, otherChainPairingCode } from "./helpers";
 
 /** Crea una tablet en el panel y devuelve su código de vinculación. */
 async function createDeviceCode(page: Page, name: string) {
@@ -184,4 +184,97 @@ test("tablet: el orden es ¿Mesa? → bienvenida → encuesta → de vuelta a ¿
 
   await page.goto("/admin/responses?table=8");
   await expect(page.getByRole("row").filter({ hasText: "Kiosko Orden, mesa 8" })).toHaveCount(1);
+});
+
+/** Abre el menú del personal (esquina superior izquierda, 3 s) y escribe el PIN. */
+async function openStaffMenu(t: Page) {
+  await t.mouse.move(20, 20);
+  await t.mouse.down();
+  await t.waitForTimeout(3300);
+  await t.mouse.up();
+  const menu = t.getByRole("dialog", { name: "Menú del personal" });
+  for (const d of "1234") await menu.getByRole("button", { name: d, exact: true }).click();
+  await menu.getByRole("button", { name: "Entrar" }).click();
+  await expect(t.getByRole("heading", { name: "Menú del personal" })).toBeVisible();
+  return menu;
+}
+
+test("tablet: «Desvincular esta tablet» avisa de lo pendiente, la libera en el panel y acepta el código de otra cadena", async ({
+  page,
+  browser,
+}) => {
+  await clearRateLimits();
+  await login(page);
+  const code = await createDeviceCode(page, "Tablet Traspaso");
+  const tablet = await browser.newContext({ viewport: { width: 1180, height: 820 }, hasTouch: true });
+  const t = await tablet.newPage();
+  await t.goto("/kiosk");
+  for (const d of code) await t.getByRole("button", { name: d, exact: true }).click();
+  await t.getByRole("button", { name: "Vincular" }).click();
+  await expect(mesaHeading(t)).toBeVisible();
+
+  // Una respuesta sin internet se queda en cola.
+  await tablet.setOffline(true);
+  await t.getByRole("button", { name: "Sin mesa" }).click();
+  await welcome(t).click();
+  await answerBaseSurvey(t);
+  await t.getByRole("button", { name: "Terminar" }).click();
+  await expect(t.getByText(/1 por enviar/)).toBeVisible();
+
+  // Sin poder enviarla, desvincular avisa cuántas se perderían y deja cancelar.
+  let menu = await openStaffMenu(t);
+  await menu.getByRole("button", { name: "Desvincular esta tablet" }).click();
+  await expect(menu.getByText("No se pudo enviar 1 respuesta. Si desvinculas ahora, se pierde.")).toBeVisible({ timeout: 15_000 });
+  await menu.getByRole("button", { name: "Cancelar" }).click();
+  await expect(mesaHeading(t)).toBeVisible();
+
+  // Con internet, desvincular primero envía la cola: ya no hay nada que perder.
+  await tablet.setOffline(false);
+  menu = await openStaffMenu(t);
+  await menu.getByRole("button", { name: "Desvincular esta tablet" }).click();
+  await expect(menu.getByRole("button", { name: "Sí, desvincular" })).toBeVisible({ timeout: 15_000 });
+  await expect(menu.getByText(/se pierde/)).toHaveCount(0);
+  await menu.getByRole("button", { name: "Sí, desvincular" }).click();
+  await expect(t.getByRole("heading", { name: "Vincular tablet" })).toBeVisible();
+
+  // La respuesta llegó y el panel ya la muestra sin vincular, sin que nadie la quite a mano.
+  await page.goto("/admin/responses?channel=KIOSK&restaurant=all");
+  await expect(page.getByRole("row").filter({ hasText: "Tablet Traspaso" })).toHaveCount(1);
+  await page.goto("/admin/devices");
+  await expect(page.getByRole("row").filter({ hasText: "Tablet Traspaso" }).getByText("Sin vincular")).toBeVisible();
+
+  // La misma tablet acepta el código de otra cadena y queda vinculada a ella.
+  const other = await otherChainPairingCode("Cadena Traspaso E2E");
+  for (const d of other.code) await t.getByRole("button", { name: d, exact: true }).click();
+  await t.getByRole("button", { name: "Vincular" }).click();
+  await expect(t.getByText("Encuesta no disponible")).toBeVisible();
+  expect(await deviceTokenHash(other.deviceId)).toMatch(/^[0-9a-f]{64}$/);
+  await tablet.close();
+});
+
+test("tablet: si la desvinculan desde el panel, lo nota al abrir el menú del personal y no pide PIN", async ({ page, browser }) => {
+  await clearRateLimits();
+  await login(page);
+  const code = await createDeviceCode(page, "Tablet Revocada");
+  const tablet = await browser.newContext({ viewport: { width: 1180, height: 820 }, hasTouch: true });
+  const t = await tablet.newPage();
+  await t.goto("/kiosk");
+  for (const d of code) await t.getByRole("button", { name: d, exact: true }).click();
+  await t.getByRole("button", { name: "Vincular" }).click();
+  await expect(mesaHeading(t)).toBeVisible();
+
+  await page.goto("/admin/devices");
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("row").filter({ hasText: "Tablet Revocada" }).getByRole("button", { name: "Desvincular" }).click();
+  await expect(page.getByRole("row").filter({ hasText: "Tablet Revocada" }).getByText("Sin vincular")).toBeVisible();
+
+  // Sin recargar: basta el gesto del menú para que la tablet vuelva sola a la pantalla de código.
+  await t.mouse.move(20, 20);
+  await t.mouse.down();
+  await t.waitForTimeout(3300);
+  await t.mouse.up();
+  await expect(t.getByRole("heading", { name: "Vincular tablet" })).toBeVisible();
+  await expect(t.getByText("Esta tablet fue desvinculada desde el panel. Escribe un código nuevo.")).toBeVisible();
+  await expect(t.getByRole("dialog", { name: "Menú del personal" })).toHaveCount(0);
+  await tablet.close();
 });
