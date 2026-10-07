@@ -68,7 +68,7 @@ jobs:
       - name: Compilar APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --console=plain
+          ./gradlew testDebugUnitTest assembleRelease --console=plain
 
       - name: Verificar firma y nombrar el APK
         run: |

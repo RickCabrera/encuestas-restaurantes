@@ -39,3 +39,41 @@ export async function clearRateLimits() {
   await sql`DELETE FROM rate_limits`;
   await sql.end();
 }
+
+/**
+ * Crea directo en la BD de E2E otra cadena con un restaurante (sin encuesta publicada) y una
+ * tablet esperando código. Devuelve el código de 6 dígitos y el id de la tablet.
+ */
+export async function otherChainPairingCode(chain: string) {
+  const sql = postgres(process.env.E2E_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/encuestas_e2e", { max: 1 });
+  try {
+    const [org] = await sql`INSERT INTO organizations (name) VALUES (${chain}) RETURNING id`;
+    const slug = `traspaso-${Date.now()}`;
+    const [restaurant] = await sql`
+      INSERT INTO restaurants (organization_id, name, slug, kiosk_pin_hash)
+      VALUES (${org.id}, ${`Sucursal ${chain}`}, ${slug}, 'sin-pin') RETURNING id`;
+    let code = "";
+    for (;;) {
+      code = String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+      const used = await sql`SELECT 1 FROM devices WHERE pairing_code = ${code}`;
+      if (used.length === 0) break;
+    }
+    const [device] = await sql`
+      INSERT INTO devices (restaurant_id, name, pairing_code, pairing_expires_at)
+      VALUES (${restaurant.id}, 'Tablet traspasada', ${code}, now() + interval '15 minutes') RETURNING id`;
+    return { code, deviceId: device.id as string };
+  } finally {
+    await sql.end();
+  }
+}
+
+/** Token (su hash) con el que está vinculada una tablet, o null si no lo está. */
+export async function deviceTokenHash(deviceId: string) {
+  const sql = postgres(process.env.E2E_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/encuestas_e2e", { max: 1 });
+  try {
+    const [row] = await sql`SELECT token_hash FROM devices WHERE id = ${deviceId}`;
+    return (row?.token_hash as string | null) ?? null;
+  } finally {
+    await sql.end();
+  }
+}

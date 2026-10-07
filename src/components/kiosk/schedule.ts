@@ -3,6 +3,16 @@
 import { isLocalMode } from "@/lib/app-mode";
 
 export const BACKGROUND_REFRESH_MS = 30 * 60_000;
+export const LOCAL_BACKGROUND_REFRESH_MS = 60_000;
+
+/**
+ * Cada cuánto consulta la tablet en espera. En nube, cada 30 minutos para no mantener despierta
+ * la base; en modo local la base está en la misma PC y se consulta cada minuto, así la tablet
+ * nota pronto si la desvincularon desde el panel.
+ */
+export function backgroundRefreshMs() {
+  return isLocalMode() ? LOCAL_BACKGROUND_REFRESH_MS : BACKGROUND_REFRESH_MS;
+}
 
 // Los restaurantes están cerrados de madrugada: sin consultas, la base de datos puede suspenderse.
 const NIGHT_TIMEZONE = "America/Mexico_City";

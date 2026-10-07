@@ -17,6 +17,7 @@ android {
         targetSdk = 35
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "1.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -51,4 +52,13 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
+}
+
+// Solo para pruebas: la app no usa ninguna biblioteca.
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }

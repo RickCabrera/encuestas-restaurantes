@@ -31,7 +31,20 @@
     <string name="menu_change_server">Cambiar servidor</string>
     <string name="menu_lock">Bloquear tablet</string>
     <string name="menu_unlock">Desbloquear tablet</string>
-    <string name="lock_pending">El bloqueo está activado, pero la pantalla no está fijada. Toca «Bloquear tablet» y acepta el aviso de Android.</string>
+    <string name="lock_status_title">Estado del bloqueo</string>
+    <string name="lock_status_owner">Bloqueo total (device owner): %1$s</string>
+    <string name="lock_status_pinned">Pantalla fijada: %1$s</string>
+    <string name="lock_status_yes">sí</string>
+    <string name="lock_status_no">no</string>
+    <string name="lock_basic_warning">Bloqueo básico: se puede salir con el gesto de Android. Para tablets de restaurante usa el bloqueo total (ver TABLET-APK).</string>
+    <string name="lock_continue">Bloquear</string>
+    <string name="menu_unpair">Desvincular esta tablet</string>
+    <string name="unpair_message">No se pudo abrir la encuesta para desvincular desde ahí, así que solo se borra lo guardado en esta tablet. La tablet volverá a pedir un código; en el panel seguirá como vinculada hasta que la desvincules ahí.</string>
+    <plurals name="unpair_pending">
+        <item quantity="one">Hay %1$d respuesta sin enviar que se perderá.</item>
+        <item quantity="other">Hay %1$d respuestas sin enviar que se perderán.</item>
+    </plurals>
+    <string name="unpair_confirm">Desvincular</string>
     <string name="lock_unsupported">Esta tablet no permitió fijar la pantalla.</string>
     <string name="unlock_manual">Android no dejó desfijar desde la app. Usa el gesto de Android para desfijar.</string>
     <string name="menu_remove_owner">Quitar el bloqueo total</string>

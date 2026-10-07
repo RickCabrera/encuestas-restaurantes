@@ -64,7 +64,18 @@ Cómo funciona:
 - La tablet muestra "Toca para comenzar". El comensal responde y ve el mensaje final. Unos segundos después la tablet vuelve sola al inicio.
 - **Si se va el internet, la tablet sigue funcionando.** Guarda las respuestas y las envía cuando regresa la conexión. En la esquina inferior derecha verás cuántas faltan por enviar.
 - **Menú del personal:** mantén presionada 3 segundos la esquina superior izquierda y escribe el PIN. Desde ahí puedes actualizar la encuesta, salir de pantalla completa o desvincular la tablet.
-- En **Tablets** ves cuándo se conectó cada una por última vez. **Desvincular** hace que la tablet vuelva a pedir código; úsalo si se pierde o se reemplaza.
+- En **Tablets** ves cuándo se conectó cada una por última vez. **Desvincular** hace que la tablet vuelva a pedir código; úsalo si se pierde o se reemplaza. La tablet lo nota sola: al iniciar la siguiente encuesta, al abrir el menú del personal o en su siguiente consulta automática (cada 30 minutos).
+
+### Desvincular esta tablet
+
+Sirve para pasar una tablet a otro restaurante, o a otra cadena, desde la propia tablet:
+
+1. Abre el **menú del personal** (esquina superior izquierda, 3 segundos, PIN) y toca **Desvincular esta tablet**.
+2. La tablet intenta enviar primero las respuestas que tenga pendientes. Si no puede (por ejemplo, sin internet), te dice cuántas se perderían; toca **Cancelar** para reintentar más tarde o **Desvincular de todos modos**.
+3. Al confirmar, la tablet vuelve a la pantalla **Vincular tablet** y en **Tablets** aparece como "Sin vincular".
+4. Para usarla en otro restaurante o cadena: **Tablets → Agregar tablet** en el panel de ese restaurante, y escribe el código en la tablet.
+
+En la app Android la misma opción está también en el "Menú de la app" (ver [TABLET-APK.md](TABLET-APK.md#pasar-la-tablet-a-otro-restaurante-o-cadena)).
 
 ## Códigos QR
 

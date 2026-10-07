@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SurveyRunner } from "@/components/survey/survey-runner";
 import { readableOn, type RunnerSurvey, type SubmitPayload } from "@/components/survey/types";
 import { Keypad } from "./keypad";
-import { BACKGROUND_REFRESH_MS, isNightPause } from "./schedule";
+import { backgroundRefreshMs, isNightPause } from "./schedule";
 import { hashPin, type KioskConfig, kioskStore } from "./storage";
 
 // "table" es la pantalla de espera (la usa el mesero); "welcome" y "survey" son del comensal.
@@ -14,6 +14,18 @@ const CONFIG_REFRESH_MS = 60_000;
 const FLUSH_INTERVAL_MS = 30_000;
 const SECRET_HOLD_MS = 3000;
 const TABLE_MAX_DIGITS = 4;
+// Al desvincular: cuánto se espera a que salgan las respuestas en cola y a que el servidor conteste.
+const UNPAIR_FLUSH_MS = 8000;
+const UNPAIR_REQUEST_MS = 5000;
+
+const UNPAIRED_NOTICE = "Esta tablet fue desvinculada desde el panel. Escribe un código nuevo.";
+const RESTAURANT_GONE_NOTICE = "El restaurante de esta tablet ya no existe. Escribe un código nuevo.";
+
+/**
+ * Lo que la app Android (android-tablet/) usa de esta página desde su "Menú de la app".
+ * `busy` es true mientras `check` espera al servidor.
+ */
+type KioskBridge = { busy: boolean; check: () => void; requestUnpair: () => void };
 
 export function KioskApp() {
   const [phase, setPhase] = useState<Phase>("boot");
@@ -25,7 +37,8 @@ export function KioskApp() {
   const [runKey, setRunKey] = useState(0);
   const [pending, setPending] = useState(0);
   const [online, setOnline] = useState(true);
-  const [menu, setMenu] = useState<"closed" | "pin" | "open">("closed");
+  // "unpair" abre el menú directo en "Desvincular esta tablet" (lo pide la app Android, que ya validó el PIN).
+  const [menu, setMenu] = useState<"closed" | "pin" | "open" | "unpair">("closed");
   const [notice, setNotice] = useState<string | null>(null);
 
   const lastFetch = useRef(0);
@@ -53,7 +66,12 @@ export function KioskApp() {
     try {
       const res = await fetch("/api/kiosk/config", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
       if (res.status === 401) {
-        unpair("Esta tablet fue desvinculada desde el panel. Escribe un código nuevo.");
+        unpair(UNPAIRED_NOTICE);
+        return;
+      }
+      // El restaurante se borró: sin esto la tablet se quedaría con una encuesta y un PIN que ya no existen.
+      if (res.status === 404) {
+        unpair(RESTAURANT_GONE_NOTICE);
         return;
       }
       if (!res.ok) return;
@@ -90,7 +108,7 @@ export function KioskApp() {
         }
         setOnline(true);
         if (res.status === 401) {
-          unpair("Esta tablet fue desvinculada desde el panel. Escribe un código nuevo.");
+          unpair(UNPAIRED_NOTICE);
           return;
         }
         if (res.status === 429 || res.status >= 500) {
@@ -147,7 +165,7 @@ export function KioskApp() {
     const flushT = setInterval(() => void flushQueue(), FLUSH_INTERVAL_MS);
     const cfgT = setInterval(() => {
       if (phaseRef.current === "table" && !isNightPause()) void refreshConfig();
-    }, BACKGROUND_REFRESH_MS);
+    }, backgroundRefreshMs());
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
@@ -253,6 +271,58 @@ export function KioskApp() {
 
   useEffect(() => clearTimers, []);
 
+  /** Intenta enviar lo que haya en cola y devuelve cuántas respuestas se perderían al desvincular. */
+  const prepareUnpair = useCallback(async () => {
+    await Promise.race([flushQueue(), new Promise((r) => setTimeout(r, UNPAIR_FLUSH_MS))]);
+    const left = kioskStore.getQueue().length;
+    setPending(left);
+    return left;
+  }, [flushQueue]);
+
+  /** Libera la tablet en el servidor (si responde) y vuelve a la pantalla de vinculación. */
+  const unpairHere = useCallback(async () => {
+    const token = kioskStore.getToken();
+    if (token) {
+      const abort = new AbortController();
+      const timer = setTimeout(() => abort.abort(), UNPAIR_REQUEST_MS);
+      try {
+        await fetch("/api/kiosk/unpair", { method: "POST", headers: { Authorization: `Bearer ${token}` }, signal: abort.signal });
+      } catch {
+        // Sin conexión: la tablet se desvincula igual; en el panel seguirá como vinculada hasta que la quiten ahí.
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    unpair();
+  }, [unpair]);
+
+  // Abrir el menú también comprueba la vinculación: si la quitaron desde el panel, la tablet
+  // pasa a la pantalla de código en lugar de pedir un PIN que ya no sirve.
+  const openMenu = useCallback(() => {
+    setMenu("pin");
+    void refreshConfig();
+  }, [refreshConfig]);
+
+  useEffect(() => {
+    const bridge: KioskBridge = {
+      busy: false,
+      check: () => {
+        bridge.busy = true;
+        void refreshConfig().finally(() => {
+          bridge.busy = false;
+        });
+      },
+      requestUnpair: () => {
+        if (kioskStore.getToken()) setMenu("unpair");
+      },
+    };
+    const w = window as unknown as { sobremesaKiosk?: KioskBridge };
+    w.sobremesaKiosk = bridge;
+    return () => {
+      if (w.sobremesaKiosk === bridge) delete w.sobremesaKiosk;
+    };
+  }, [refreshConfig]);
+
   // ───────── Render ─────────
 
   if (phase === "boot") return <div className="h-dvh bg-paper" />;
@@ -277,7 +347,7 @@ export function KioskApp() {
 
   return (
     <div className="relative h-dvh overflow-hidden">
-      <SecretCorner onTrigger={() => setMenu("pin")} />
+      <SecretCorner onTrigger={openMenu} />
 
       {phase === "survey" && cycleSurvey && brand ? (
         <div className="h-full overflow-y-auto">
@@ -332,9 +402,11 @@ export function KioskApp() {
 
       <StatusDot online={online} pending={pending} />
 
-      {menu !== "closed" && config ? (
+      {menu !== "closed" ? (
         <StaffMenu
-          stage={menu}
+          key={menu === "unpair" ? "unpair" : "menu"}
+          // Sin configuración descargada no hay PIN que pedir: el menú abre directo para poder desvincular.
+          stage={menu === "pin" && !config ? "open" : menu}
           config={config}
           pending={pending}
           onClose={() => setMenu("closed")}
@@ -345,11 +417,8 @@ export function KioskApp() {
             setMenu("closed");
             backToTable();
           }}
-          onUnpair={() => {
-            if (pending > 0 && !confirm(`Hay ${pending} respuestas sin enviar que se perderán. ¿Desvincular de todos modos?`))
-              return;
-            unpair();
-          }}
+          onPrepareUnpair={prepareUnpair}
+          onUnpair={unpairHere}
         />
       ) : null}
     </div>
@@ -553,19 +622,42 @@ function StaffMenu({
   onClose,
   onUnlocked,
   onReload,
+  onPrepareUnpair,
   onUnpair,
 }: {
-  stage: "pin" | "open";
-  config: KioskConfig;
+  stage: "pin" | "open" | "unpair";
+  /** null si la tablet tiene token pero nunca pudo descargar su configuración. */
+  config: KioskConfig | null;
   pending: number;
   onClose: () => void;
   onUnlocked: () => void;
   onReload: () => void;
-  onUnpair: () => void;
+  /** Intenta enviar la cola y devuelve cuántas respuestas siguen sin enviar. */
+  onPrepareUnpair: () => Promise<number>;
+  onUnpair: () => Promise<void>;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [tries, setTries] = useState(0);
   const [isFullscreen] = useState(() => typeof document !== "undefined" && !!document.fullscreenElement);
+  // Desvincular: primero se intenta enviar la cola ("sending") y luego se confirma, con lo que se perdería.
+  const [unpairing, setUnpairing] = useState<"no" | "sending" | "confirm" | "working">(stage === "unpair" ? "sending" : "no");
+  const [lost, setLost] = useState(0);
+
+  const startUnpair = useCallback(async () => {
+    setUnpairing("sending");
+    setLost(await onPrepareUnpair());
+    setUnpairing("confirm");
+  }, [onPrepareUnpair]);
+
+  const startedInUnpair = useRef(stage === "unpair");
+  useEffect(() => {
+    if (!startedInUnpair.current) return;
+    startedInUnpair.current = false;
+    void onPrepareUnpair().then((left) => {
+      setLost(left);
+      setUnpairing("confirm");
+    });
+  }, [onPrepareUnpair]);
 
   return (
     <div
@@ -575,7 +667,40 @@ function StaffMenu({
       aria-label="Menú del personal"
     >
       <div className="w-full max-w-md rounded-3xl bg-paper p-6 shadow-2xl">
-        {stage === "pin" ? (
+        {unpairing !== "no" ? (
+          <>
+            <h2 className="font-display text-2xl font-semibold">Desvincular esta tablet</h2>
+            {unpairing === "sending" ? (
+              <p className="mt-4 text-[17px] text-ink-soft">Enviando las respuestas pendientes…</p>
+            ) : (
+              <>
+                {lost > 0 ? (
+                  <p className="mt-4 rounded-2xl border border-chile/30 p-4 text-[17px] font-medium text-chile">
+                    {lost === 1
+                      ? "No se pudo enviar 1 respuesta. Si desvinculas ahora, se pierde."
+                      : `No se pudieron enviar ${lost} respuestas. Si desvinculas ahora, se pierden.`}
+                  </p>
+                ) : null}
+                <p className="mt-4 text-[17px] text-ink-soft">
+                  La tablet dejará de mostrar la encuesta y volverá a pedir un código. Podrás vincularla de nuevo con un código
+                  de este u otro restaurante.
+                </p>
+                <div className="mt-6 grid gap-3">
+                  <MenuButton
+                    tone="danger"
+                    disabled={unpairing === "working"}
+                    onClick={() => {
+                      setUnpairing("working");
+                      void onUnpair();
+                    }}
+                  >
+                    {unpairing === "working" ? "Desvinculando…" : lost > 0 ? "Desvincular de todos modos" : "Sí, desvincular"}
+                  </MenuButton>
+                </div>
+              </>
+            )}
+          </>
+        ) : stage === "pin" && config ? (
           <>
             <h2 className="mb-6 text-center font-display text-2xl font-semibold">PIN del personal</h2>
             <Keypad
@@ -607,11 +732,11 @@ function StaffMenu({
             <dl className="mt-4 space-y-1 text-[15px] text-ink-soft">
               <div>
                 <dt className="inline">Tablet: </dt>
-                <dd className="inline font-medium text-ink">{config.device.name}</dd>
+                <dd className="inline font-medium text-ink">{config?.device.name ?? "—"}</dd>
               </div>
               <div>
                 <dt className="inline">Restaurante: </dt>
-                <dd className="inline font-medium text-ink">{config.restaurant.name}</dd>
+                <dd className="inline font-medium text-ink">{config?.restaurant.name ?? "—"}</dd>
               </div>
               <div>
                 <dt className="inline">Respuestas por enviar: </dt>
@@ -630,14 +755,14 @@ function StaffMenu({
                   Salir de pantalla completa
                 </MenuButton>
               ) : null}
-              <MenuButton onClick={onUnpair} tone="danger">
+              <MenuButton onClick={() => void startUnpair()} tone="danger">
                 Desvincular esta tablet
               </MenuButton>
             </div>
           </>
         )}
         <button type="button" onClick={onClose} className="mt-5 h-12 w-full rounded-2xl text-lg text-ink-soft hover:bg-line-soft">
-          Cerrar
+          {unpairing === "no" ? "Cerrar" : "Cancelar"}
         </button>
       </div>
     </div>

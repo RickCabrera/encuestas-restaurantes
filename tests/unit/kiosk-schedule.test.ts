@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { BACKGROUND_REFRESH_MS, isNightPause } from "@/components/kiosk/schedule";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { BACKGROUND_REFRESH_MS, backgroundRefreshMs, isNightPause } from "@/components/kiosk/schedule";
 
 // Ciudad de México es UTC-6 todo el año (sin horario de verano desde 2022).
 const cdmx = (hhmm: string, day = "2026-10-05") => new Date(new Date(`${day}T${hhmm}:00Z`).getTime() + 6 * 3_600_000);
@@ -29,5 +29,20 @@ describe("refresco en segundo plano de la tablet", () => {
     // Tampoco cambia en julio, cuando antes había horario de verano.
     expect(isNightPause(new Date("2026-07-15T12:30:00Z"))).toBe(true);
     expect(isNightPause(new Date("2026-07-15T13:00:00Z"))).toBe(false);
+  });
+});
+
+describe("frecuencia de la consulta en espera", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("en nube sigue siendo cada 30 minutos", () => {
+    vi.stubEnv("APP_MODE", "");
+    vi.stubEnv("NEXT_PUBLIC_APP_MODE", "");
+    expect(backgroundRefreshMs()).toBe(30 * 60_000);
+  });
+
+  it("en modo local baja a 1 minuto", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_MODE", "local");
+    expect(backgroundRefreshMs()).toBe(60_000);
   });
 });
