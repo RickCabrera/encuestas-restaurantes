@@ -10,7 +10,8 @@ async function main() {
     process.exit(1);
   }
   const client = postgres(url, { max: 1, onnotice: () => {} });
-  await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
+  // El instalador de PC (installer/) guarda las migraciones en otra carpeta.
+  await migrate(drizzle(client), { migrationsFolder: process.env.MIGRATIONS_DIR || "./drizzle" });
   await client.end();
   console.log("Migraciones aplicadas.");
 }

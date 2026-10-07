@@ -14,7 +14,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
-      <Sidebar isAdmin={user.role === "ADMIN"} organizationName={user.organizationName} />
+      {/* APP_VERSION la define el servicio de la versión instalada en PC; en nube no existe. */}
+      <Sidebar
+        isAdmin={user.role === "ADMIN"}
+        organizationName={user.organizationName}
+        version={process.env.APP_VERSION || null}
+      />
       <div className="min-w-0">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-5 py-3 lg:px-10">
           <Suspense fallback={<div className="h-9" />}>
