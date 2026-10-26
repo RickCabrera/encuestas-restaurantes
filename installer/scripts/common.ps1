@@ -276,8 +276,8 @@ function Update-ListoPage([string]$InviteLink = '') {
     $warnings += '<div class="warn"><strong>Esta PC no tiene red.</strong> Conéctala al Wi-Fi o al cable del restaurante y usa el acceso directo "Actualizar la IP" del menú Inicio.</div>'
   } elseif ($currentUrl -ne $appUrl) {
     $warnings += '<div class="warn"><strong>La IP de esta PC cambió.</strong> Antes era ' + (ConvertTo-Html $appUrl) + ' y ahora es ' + (ConvertTo-Html $currentUrl) + '. ' +
-      'El panel y las tablets con la app actualizada ya usan la nueva. Los QR que imprimiste antes llevan la dirección anterior: vuelve a imprimirlos, o en el router reserva para esta PC la IP anterior. ' +
-      'Para quitar este aviso usa el acceso directo "Actualizar la IP" del menú Inicio.</div>'
+      'No tienes que hacer nada en el sistema: el panel y las tablets con la app actualizada ya usan la nueva. Solo los QR que imprimiste antes llevan la dirección anterior: vuelve a imprimirlos, o en el router reserva para esta PC la IP anterior. ' +
+      'Para quitar este aviso toca el botón <strong>Actualizar la IP</strong>, aquí abajo.</div>'
   }
   # La dirección para las tablets es la actual: el sistema ya la usa aunque APP_URL tenga la anterior.
   $tabletUrl = if ($currentUrl) { $currentUrl } else { $appUrl }
@@ -306,7 +306,7 @@ function Update-ListoPage([string]$InviteLink = '') {
   $html = $html.Replace('{{DATE}}', (Get-Date -Format 'yyyy-MM-dd HH:mm'))
   [System.IO.File]::WriteAllText($ListoHtml, $html, (New-Object System.Text.UTF8Encoding($true)))
 
-  $data = [ordered]@{ version = $version; ip = $lan.Ip; tabletUrl = $tabletUrl; inviteLink = $InviteLink; networkCategory = $lan.Category }
+  $data = [ordered]@{ version = $version; ip = $lan.Ip; tabletUrl = $tabletUrl; ipChanged = [bool]($currentUrl -and $currentUrl -ne $appUrl); inviteLink = $InviteLink; networkCategory = $lan.Category }
   [System.IO.File]::WriteAllText($ListoJson, ($data | ConvertTo-Json), $Utf8NoBom)
 }
 

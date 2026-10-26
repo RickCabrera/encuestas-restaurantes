@@ -1,5 +1,8 @@
 import "server-only";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { db } from "@/db";
+import { appSettings } from "@/db/schema";
 import { isLocalMode } from "@/lib/app-mode";
 import { currentLanAddress, isPrivateIPv4 } from "@/lib/lan-address";
 
@@ -58,14 +61,36 @@ export async function appUrl() {
   return `${proto}://${host}`;
 }
 
+/** Dirección que el administrador ya confirmó en el panel tras un cambio de IP. */
+export const ACK_ADDRESS_KEY = "local_address_ack";
+
+async function acknowledgedAddress() {
+  try {
+    const [row] = await db.select({ value: appSettings.value }).from(appSettings).where(eq(appSettings.key, ACK_ADDRESS_KEY));
+    return row?.value ?? null;
+  } catch {
+    // Base sin la migración todavía: se compara solo contra APP_URL.
+    return null;
+  }
+}
+
 /**
- * Versión instalada en PC: si la IP cambió desde que se configuró APP_URL, las dos direcciones
- * (para avisar que los QR ya impresos llevan la anterior). null si no cambió o en nube.
+ * Versión instalada en PC: la dirección actual, si es distinta de la que se configuró al
+ * instalar (APP_URL) y de la última que el administrador confirmó en el panel. Sirve para avisar
+ * que los QR ya impresos llevan la anterior. null si no cambió o en nube.
  */
 export async function changedLocalAddress() {
   if (!isLocalMode()) return null;
   const configured = configuredAppUrl();
   if (!configured) return null;
   const current = await localAppUrl();
-  return current === configured ? null : { configured, current };
+  if (current === configured) return null;
+  const acknowledged = await acknowledgedAddress();
+  if (current === acknowledged) return null;
+  return { configured: acknowledged ?? configured, current };
+}
+
+/** La dirección actual de la PC (para guardarla como confirmada). */
+export async function currentLocalAppUrl() {
+  return isLocalMode() ? localAppUrl() : null;
 }

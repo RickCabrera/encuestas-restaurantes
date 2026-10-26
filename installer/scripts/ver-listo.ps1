@@ -76,6 +76,14 @@ if ($data -and $data.inviteLink) { Add-MainButton 'Crear mi cadena' } else { Add
 if ($data -and $data.tabletUrl) {
   Add-Button 'Copiar dirección de las tablets' { [System.Windows.Forms.Clipboard]::SetText($data.tabletUrl) }
 }
+# Si la IP cambió, el botón para guardarla está aquí mismo (además del menú Inicio).
+$actualizarIp = Join-Path $PSScriptRoot 'actualizar-ip.ps1'
+if ($data -and $data.ipChanged) {
+  Add-Button 'Actualizar la IP' {
+    $form.Close()
+    Start-Process -FilePath $PowerShellExe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$actualizarIp`"")
+  }
+}
 Add-Button 'Cerrar' { $form.Close() }
 
 $form.Controls.Add($browser)

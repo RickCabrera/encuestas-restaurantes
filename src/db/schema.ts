@@ -320,6 +320,16 @@ export const answersRelations = relations(answers, ({ one }) => ({
   question: one(questions, { fields: [answers.questionId], references: [questions.id] }),
 }));
 
+/**
+ * Valores de la instalación completa (no de una cadena). En la versión instalada en PC guarda,
+ * por ejemplo, la dirección que el administrador ya confirmó tras un cambio de IP.
+ */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Organization = typeof organizations.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Restaurant = typeof restaurants.$inferSelect;

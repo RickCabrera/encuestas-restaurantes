@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { logoutAction } from "@/app/actions/auth";
+import { acknowledgeLocalAddressAction } from "@/app/actions/local-address";
 import { Notice } from "@/components/ui/primitives";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { requireUser } from "@/lib/auth";
 import { RESTAURANT_COOKIE } from "@/lib/filters";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
@@ -50,10 +52,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {ipChange ? (
             <div className="mb-6">
               <Notice tone="amber">
-                <strong>La IP de esta PC cambió.</strong> Antes era {ipChange.configured.replace(/^https?:\/\//, "")} y ahora es{" "}
-                {ipChange.current.replace(/^https?:\/\//, "")}. El panel y las tablets con la app actualizada ya usan la nueva.
-                Los QR que imprimiste antes llevan la dirección anterior: vuelve a imprimirlos, o en el router reserva para esta
-                PC la IP anterior. Para quitar este aviso: en la PC, menú Inicio → Sobremesa Encuestas → Actualizar la IP.
+                <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+                  <p className="min-w-0 flex-1">
+                    <strong>La IP de esta PC cambió</strong> de {ipChange.configured.replace(/^https?:\/\//, "")} a{" "}
+                    {ipChange.current.replace(/^https?:\/\//, "")}. No tienes que hacer nada en el sistema: el panel y las tablets
+                    con la app actualizada ya usan la nueva. Solo los <strong>QR que imprimiste antes</strong> llevan la dirección
+                    anterior: vuelve a imprimirlos (o en el router reserva para esta PC la IP anterior).
+                  </p>
+                  <form action={acknowledgeLocalAddressAction}>
+                    <SubmitButton variant="secondary" size="sm" pendingText="Ocultando…">
+                      Entendido, ocultar aviso
+                    </SubmitButton>
+                  </form>
+                </div>
               </Notice>
             </div>
           ) : null}

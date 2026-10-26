@@ -133,7 +133,7 @@ Lo que hay que hacer a mano:
 
 1. **Volver a imprimir los QR de mesa**: los anteriores llevan la IP vieja. O, mejor, devolverle a la PC la IP anterior reservándola en el router ([sección 4](#4-fijar-la-ip-en-el-router)) y reiniciar la PC: así los QR impresos vuelven a funcionar.
 2. **Reservar la IP en el router** para que no se repita.
-3. Para quitar el aviso: menú Inicio → **Todas las aplicaciones → Sobremesa Encuestas → Actualizar la IP**. Guarda la IP nueva como la configurada.
+3. Para quitar el aviso: en el panel, botón **Entendido, ocultar aviso** (o, en la PC, el botón **Actualizar la IP** de la página "Listo", que guarda la IP nueva como la configurada).
 
 Tablets con una app anterior a la 1.1: mantén presionadas las dos esquinas superiores 5 segundos, escribe el PIN, toca **Cambiar servidor**, escribe la dirección nueva y vuelve a vincular la tablet (**Tablets → Agregar tablet**). Las respuestas que tenía pendientes se quedan ligadas a la dirección anterior. Conviene actualizar la app ([TABLET-APK.md](TABLET-APK.md#actualizar)).
 
