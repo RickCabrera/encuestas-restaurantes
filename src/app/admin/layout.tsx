@@ -1,9 +1,11 @@
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { logoutAction } from "@/app/actions/auth";
+import { Notice } from "@/components/ui/primitives";
 import { requireUser } from "@/lib/auth";
 import { RESTAURANT_COOKIE } from "@/lib/filters";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
+import { changedLocalAddress } from "@/lib/request";
 import { RestaurantSelector } from "./restaurant-selector";
 import { Sidebar } from "./sidebar";
 
@@ -11,6 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await requireUser();
   const restaurants = await listAccessibleRestaurants(user);
   const selected = (await cookies()).get(RESTAURANT_COOKIE)?.value ?? "all";
+  const ipChange = user.role === "ADMIN" ? await changedLocalAddress() : null;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
@@ -43,7 +46,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </header>
-        <main className="mx-auto max-w-[1200px] px-5 py-8 lg:px-10 lg:py-10">{children}</main>
+        <main className="mx-auto max-w-[1200px] px-5 py-8 lg:px-10 lg:py-10">
+          {ipChange ? (
+            <div className="mb-6">
+              <Notice tone="amber">
+                <strong>La IP de esta PC cambió.</strong> Antes era {ipChange.configured.replace(/^https?:\/\//, "")} y ahora es{" "}
+                {ipChange.current.replace(/^https?:\/\//, "")}. El panel y las tablets con la app actualizada ya usan la nueva.
+                Los QR que imprimiste antes llevan la dirección anterior: vuelve a imprimirlos, o en el router reserva para esta
+                PC la IP anterior. Para quitar este aviso: en la PC, menú Inicio → Sobremesa Encuestas → Actualizar la IP.
+              </Notice>
+            </div>
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );

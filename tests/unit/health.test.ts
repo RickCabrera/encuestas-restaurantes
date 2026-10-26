@@ -17,6 +17,15 @@ describe("/api/health", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it("incluye un identificador de la instalación, estable y sin revelar el secreto", async () => {
+    const a = await (await GET(new Request("http://localhost/api/health"))).json();
+    const b = await (await GET(new Request("http://localhost/api/health"))).json();
+    expect(a.app).toBe("sobremesa");
+    expect(a.instance).toMatch(/^[0-9a-f]{24}$/);
+    expect(b.instance).toBe(a.instance);
+    expect(a.instance).not.toContain(process.env.AUTH_SECRET);
+  });
+
   it("con ?db=1 consulta la base", async () => {
     execute.mockResolvedValue([]);
     const res = await GET(new Request("http://localhost/api/health?db=1"));

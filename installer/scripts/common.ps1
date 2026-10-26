@@ -275,8 +275,12 @@ function Update-ListoPage([string]$InviteLink = '') {
   if (-not $lan.Ip) {
     $warnings += '<div class="warn"><strong>Esta PC no tiene red.</strong> Conéctala al Wi-Fi o al cable del restaurante y usa el acceso directo "Actualizar la IP" del menú Inicio.</div>'
   } elseif ($currentUrl -ne $appUrl) {
-    $warnings += '<div class="warn"><strong>La IP de esta PC cambió.</strong> Ahora es ' + (ConvertTo-Html $lan.Ip) + ', pero el sistema sigue configurado con ' + (ConvertTo-Html $appUrl) + '. Usa el acceso directo "Actualizar la IP" del menú Inicio.</div>'
+    $warnings += '<div class="warn"><strong>La IP de esta PC cambió.</strong> Antes era ' + (ConvertTo-Html $appUrl) + ' y ahora es ' + (ConvertTo-Html $currentUrl) + '. ' +
+      'El panel y las tablets con la app actualizada ya usan la nueva. Los QR que imprimiste antes llevan la dirección anterior: vuelve a imprimirlos, o en el router reserva para esta PC la IP anterior. ' +
+      'Para quitar este aviso usa el acceso directo "Actualizar la IP" del menú Inicio.</div>'
   }
+  # La dirección para las tablets es la actual: el sistema ya la usa aunque APP_URL tenga la anterior.
+  $tabletUrl = if ($currentUrl) { $currentUrl } else { $appUrl }
   if ($lan.Category -eq 'Public') {
     $warnings += '<div class="warn"><strong>La red de esta PC está marcada como "Pública".</strong> Así Windows bloquea a las tablets. Cámbiala a "Privada": Configuración &gt; Red e Internet &gt; (tu Wi-Fi o Ethernet) &gt; Tipo de perfil de red &gt; Privada. Los pasos completos están en INSTALAR-PC.</div>'
   }
@@ -295,14 +299,14 @@ function Update-ListoPage([string]$InviteLink = '') {
   $html = $template
   $html = $html.Replace('{{VERSION}}', (ConvertTo-Html $version))
   $html = $html.Replace('{{IP}}', (ConvertTo-Html $(if ($lan.Ip) { $lan.Ip } else { 'sin red' })))
-  $html = $html.Replace('{{TABLET_URL}}', (ConvertTo-Html $appUrl))
+  $html = $html.Replace('{{TABLET_URL}}', (ConvertTo-Html $tabletUrl))
   $html = $html.Replace('{{WARNINGS}}', $warnings)
   $html = $html.Replace('{{INVITE}}', $invite)
   $html = $html.Replace('{{BACKUPS}}', (ConvertTo-Html $BackupDir))
   $html = $html.Replace('{{DATE}}', (Get-Date -Format 'yyyy-MM-dd HH:mm'))
   [System.IO.File]::WriteAllText($ListoHtml, $html, (New-Object System.Text.UTF8Encoding($true)))
 
-  $data = [ordered]@{ version = $version; ip = $lan.Ip; tabletUrl = $appUrl; inviteLink = $InviteLink; networkCategory = $lan.Category }
+  $data = [ordered]@{ version = $version; ip = $lan.Ip; tabletUrl = $tabletUrl; inviteLink = $InviteLink; networkCategory = $lan.Category }
   [System.IO.File]::WriteAllText($ListoJson, ($data | ConvertTo-Json), $Utf8NoBom)
 }
 

@@ -8,7 +8,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 
-/** Pantalla "Dirección del servidor": solo guarda una dirección que responda en /api/health. */
+/**
+ * Pantalla "Dirección del servidor": solo guarda una dirección que responda en /api/health.
+ * Si responde el mismo servidor de antes con otra IP, la tablet sigue vinculada.
+ */
 class SetupActivity : Activity() {
     private lateinit var input: EditText
     private lateinit var status: TextView
@@ -72,10 +75,15 @@ class SetupActivity : Activity() {
 
         Thread {
             var found: String? = null
+            var instance: String? = null
             var answered: String? = null
             for (url in candidates) {
-                when (HealthCheck.check(url)) {
-                    HealthCheck.Result.OK -> found = url
+                val health = HealthCheck.probe(url)
+                when (health.result) {
+                    HealthCheck.Result.OK -> {
+                        found = url
+                        instance = health.instance
+                    }
                     HealthCheck.Result.NOT_SERVER -> answered = answered ?: url
                     HealthCheck.Result.UNREACHABLE -> Unit
                 }
@@ -87,7 +95,8 @@ class SetupActivity : Activity() {
                 val other = answered
                 when {
                     ok != null -> {
-                        ServerConfig.setServer(this, ok)
+                        // Si es el mismo servidor con otra IP, conserva la vinculación y lo pendiente.
+                        ServerConfig.setServer(this, ok, instance)
                         finish()
                     }
                     other != null -> showError(getString(R.string.setup_error_not_server, other))

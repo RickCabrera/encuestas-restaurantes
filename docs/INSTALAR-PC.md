@@ -101,7 +101,7 @@ Para confirmar que ya funciona, abre `http://IP-de-la-PC:3000/api/health` en el 
 
 ## 4. Fijar la IP en el router
 
-Las tablets y los QR guardan la IP de la PC. Si el router le da otra IP a la PC, dejan de funcionar. Por eso hay que **reservarla** en el router (una sola vez):
+Los QR impresos llevan la IP de la PC. Si el router le da otra IP a la PC, el panel y las tablets con la app 1.1 o posterior se ajustan solos ([Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia)), pero los QR ya impresos dejan de abrir. Por eso hay que **reservarla** en el router (una sola vez, al instalar):
 
 1. En la PC abre **Símbolo del sistema** y escribe `ipconfig /all`. De la conexión que estás usando anota:
    - **Dirección física** (la MAC), por ejemplo `A4-5E-60-12-34-56`.
@@ -122,18 +122,20 @@ Instala la app de tablets ([TABLET-APK.md](TABLET-APK.md)) y en **Dirección del
 
 ## Si la IP de la PC cambia
 
-Pasa cuando no se reservó la IP, se cambió el router o la PC se conectó por otra tarjeta de red. Las tablets muestran "Sin conexión, reintentando" y los QR dejan de abrir.
+Pasa cuando no se reservó la IP, se cambió el router o la PC se conectó por otra tarjeta de red. El router le da a la PC otra dirección (por ejemplo, de `192.168.0.101` a `192.168.0.100`).
 
-**Lo más fácil es devolverle a la PC la IP anterior**: resérvala en el router ([sección 4](#4-fijar-la-ip-en-el-router)) con la IP vieja y reinicia la PC. No hay que tocar nada más.
+Qué pasa solo, sin tocar nada:
 
-Si no se puede y la PC se queda con una IP nueva:
+- **El sistema usa la IP nueva.** El panel, la dirección para las tablets y los QR que se descarguen a partir de ahora salen con ella. La página "Listo" y el panel muestran un aviso con la IP anterior y la nueva.
+- **Las tablets con la app 1.1 o posterior la encuentran solas.** Al no poder abrir la dirección anterior, buscan la PC en la misma red (solo aceptan el mismo servidor, reconocido por su identificador de instalación) y se cambian a la dirección nueva **sin volver a vincular y sin perder las respuestas pendientes**. Si alguien está contestando una encuesta, esperan a que la tablet quede libre. Tarda de unos segundos a un par de minutos.
 
-1. En la PC: menú Inicio → **Sobremesa Encuestas → Actualizar la IP**. Muestra la dirección anterior y la nueva, y pide confirmar. Reinicia la aplicación.
-2. **Antes de cambiar cada tablet**, mira si tiene respuestas sin enviar (el aviso "N por enviar" en la esquina). Esas respuestas están ligadas a la dirección anterior y **no se pueden recuperar con la dirección nueva**. Si las hay, lo mejor es recuperar la IP anterior.
-3. En cada tablet: mantén presionadas las dos esquinas superiores 5 segundos, escribe el PIN, toca **Cambiar servidor** y escribe la dirección nueva.
-4. Vuelve a vincular cada tablet (**Tablets → Agregar tablet**): con otra dirección, la tablet se comporta como recién instalada.
-5. Vuelve a imprimir los QR de mesa: los anteriores llevan la IP vieja.
-6. Reserva la IP nueva en el router para que no se repita.
+Lo que hay que hacer a mano:
+
+1. **Volver a imprimir los QR de mesa**: los anteriores llevan la IP vieja. O, mejor, devolverle a la PC la IP anterior reservándola en el router ([sección 4](#4-fijar-la-ip-en-el-router)) y reiniciar la PC: así los QR impresos vuelven a funcionar.
+2. **Reservar la IP en el router** para que no se repita.
+3. Para quitar el aviso: menú Inicio → **Todas las aplicaciones → Sobremesa Encuestas → Actualizar la IP**. Guarda la IP nueva como la configurada.
+
+Tablets con una app anterior a la 1.1: mantén presionadas las dos esquinas superiores 5 segundos, escribe el PIN, toca **Cambiar servidor**, escribe la dirección nueva y vuelve a vincular la tablet (**Tablets → Agregar tablet**). Las respuestas que tenía pendientes se quedan ligadas a la dirección anterior. Conviene actualizar la app ([TABLET-APK.md](TABLET-APK.md#actualizar)).
 
 ## Actualizar a una versión nueva
 
@@ -253,16 +255,16 @@ Seguridad:
 
 ## Problemas comunes
 
-| Síntoma                                                                             | Qué revisar                                                                                                                                                                                                                                           |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| La tablet dice "No se pudo conectar con…" al guardar la dirección                   | Que esté en el mismo Wi-Fi que la PC, que la dirección lleve `http://` y `:3000`, y que la red de la PC esté como **Privada** ([sección 3](#3-poner-la-red-como-privada)). Algunos routers aíslan el Wi-Fi de invitados: no lo uses para las tablets. |
-| Funcionaba y de pronto todas las tablets dicen "Sin conexión"                       | Que la PC esté encendida y despierta. Luego, que su IP no haya cambiado: abre **Datos de la instalación (Listo)**, que avisa si cambió.                                                                                                               |
-| El icono se queda en "Iniciando…" o dice "No se pudo iniciar"                       | Reinicia la PC. Si sigue, en **Servicios** de Windows `Sobremesa Encuestas - Base de datos` y `Sobremesa Encuestas - Aplicación` deben estar "En ejecución": inícialos en ese orden y revisa las bitácoras.                                           |
-| Entré en la PC y en otro equipo me vuelve a pedir contraseña                        | Es normal: la sesión es por dirección (`localhost` en la PC, `http://IP:3000` en los demás).                                                                                                                                                          |
-| El instalador avisa que el puerto 3000 está ocupado                                 | Cierra o desinstala el programa que indica el aviso y vuelve a instalar.                                                                                                                                                                              |
-| "Los archivos se copiaron, pero la configuración no terminó"                        | Abre `C:\ProgramData\SobremesaEncuestas\logs\instalacion.log`: la última línea con `ERROR` dice el motivo. Vuelve a ejecutar el instalador después de corregirlo; retoma donde se quedó.                                                              |
-| Olvidé la contraseña del administrador                                              | Acceso directo **Restablecer contraseña de administrador**.                                                                                                                                                                                           |
-| El botón "Copiar" o la instalación como app (PWA) no funcionan igual que en la nube | Es por usar `http`. "Copiar" sí funciona; instalar la página como app y abrirla sin red, no. En las tablets usa la app Android.                                                                                                                       |
+| Síntoma                                                                             | Qué revisar                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| La tablet dice "No se pudo conectar con…" al guardar la dirección                   | Que esté en el mismo Wi-Fi que la PC, que la dirección lleve `http://` y `:3000`, y que la red de la PC esté como **Privada** ([sección 3](#3-poner-la-red-como-privada)). Algunos routers aíslan el Wi-Fi de invitados: no lo uses para las tablets.        |
+| Funcionaba y de pronto todas las tablets dicen "Sin conexión"                       | Que la PC esté encendida y despierta. Si la IP cambió, las tablets con la app 1.1 o posterior la encuentran solas en un par de minutos; **Datos de la instalación (Listo)** muestra la IP actual. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia). |
+| El icono se queda en "Iniciando…" o dice "No se pudo iniciar"                       | Reinicia la PC. Si sigue, en **Servicios** de Windows `Sobremesa Encuestas - Base de datos` y `Sobremesa Encuestas - Aplicación` deben estar "En ejecución": inícialos en ese orden y revisa las bitácoras.                                                  |
+| Entré en la PC y en otro equipo me vuelve a pedir contraseña                        | Es normal: la sesión es por dirección (`localhost` en la PC, `http://IP:3000` en los demás).                                                                                                                                                                 |
+| El instalador avisa que el puerto 3000 está ocupado                                 | Cierra o desinstala el programa que indica el aviso y vuelve a instalar.                                                                                                                                                                                     |
+| "Los archivos se copiaron, pero la configuración no terminó"                        | Abre `C:\ProgramData\SobremesaEncuestas\logs\instalacion.log`: la última línea con `ERROR` dice el motivo. Vuelve a ejecutar el instalador después de corregirlo; retoma donde se quedó.                                                                     |
+| Olvidé la contraseña del administrador                                              | Acceso directo **Restablecer contraseña de administrador**.                                                                                                                                                                                                  |
+| El botón "Copiar" o la instalación como app (PWA) no funcionan igual que en la nube | Es por usar `http`. "Copiar" sí funciona; instalar la página como app y abrirla sin red, no. En las tablets usa la app Android.                                                                                                                              |
 
 ## Para quien mantiene el instalador
 
