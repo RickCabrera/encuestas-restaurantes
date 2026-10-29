@@ -13,7 +13,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#2f6b4f",
+  themeColor: "#0e8a6e",
 };
 
 export default function KioskPage() {

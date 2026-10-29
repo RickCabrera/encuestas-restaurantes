@@ -6,8 +6,9 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { passwordResetTokens, users } from "@/db/schema";
+import { organizations, passwordResetTokens, users } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
+import { isLocalMode } from "@/lib/app-mode";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { escapeHtml, sendEmail } from "@/lib/email";
@@ -66,14 +67,27 @@ async function loginActionInner(_prev: ActionState, formData: FormData): Promise
     return { error: "Correo o contraseña incorrectos.", values };
   }
 
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, user.organizationId),
+    columns: { active: true, internal: true },
+  });
+  if (!org || (!org.active && !user.platformAdmin)) {
+    logger.warn("auth.login_org_inactive", { email, ip });
+    return { error: "La cuenta de tu negocio está desactivada. Escríbenos para reactivarla.", values };
+  }
+
   await resetRateLimit(`login:email:${email}`);
   await createSession(user);
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
   logger.info("auth.login", { userId: user.id });
+  const home = user.platformAdmin && !isLocalMode() ? "/plataforma" : "/admin";
   const next = String(formData.get("next") ?? "");
-  // Solo rutas internas del panel (evita redirecciones abiertas a otros sitios).
+  // Solo rutas internas (evita redirecciones abiertas a otros sitios).
+  if (next.startsWith("//")) redirect(home);
+  if (next.startsWith("/plataforma") && user.platformAdmin && !isLocalMode()) redirect(next);
   const adminOnly = ADMIN_ONLY_PATHS.some((p) => next.startsWith(p));
-  const allowed = next.startsWith("/admin") && !next.startsWith("//") && (user.role === "ADMIN" || !adminOnly);
-  redirect(allowed ? next : "/admin");
+  const allowed = next.startsWith("/admin") && !org.internal && (user.role === "ADMIN" || !adminOnly);
+  redirect(allowed ? next : home);
 }
 
 export async function logoutAction() {

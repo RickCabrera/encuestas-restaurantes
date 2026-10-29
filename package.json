@@ -23,7 +23,9 @@
     "invite:admin": "dotenv -- tsx scripts/create-invite.ts",
     "invite:org": "dotenv -- tsx scripts/invite-org.ts",
     "org:delete": "dotenv -- tsx scripts/delete-org.ts",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "platform-admin": "dotenv -- tsx scripts/platform-admin.ts",
+    "release": "npm run db:migrate && npm run platform-admin"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -34,6 +36,7 @@
     "@sentry/nextjs": "^11.1.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "dotenv-cli": "^11.0.0",
     "drizzle-orm": "^0.45.3",
     "jose": "^6.2.12",
     "lucide-react": "^1.49.0",
@@ -46,6 +49,7 @@
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.7.0",
+    "tsx": "^4.23.15",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -57,7 +61,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^5.0.3",
-    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.11",
     "esbuild": "^0.28.2",
     "eslint": "^9",
@@ -66,7 +69,6 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "tailwindcss": "^4",
-    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   },

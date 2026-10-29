@@ -2,11 +2,11 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { jwtVerify, SignJWT } from "jose";
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
 import { users, type User } from "@/db/schema";
-import { secureCookies } from "./app-mode";
+import { isLocalMode, secureCookies } from "./app-mode";
 import { buildSessionUser, type SessionUser } from "./session-user";
 
 export type { SessionUser };
@@ -68,8 +68,27 @@ export async function requireUser() {
   if (!user) {
     // Ruta original (la pone src/proxy.ts) para regresar ahí después del login.
     const path = (await headers()).get("x-request-path");
-    redirect(path && path.startsWith("/admin") && path !== "/admin" ? `/login?next=${encodeURIComponent(path)}` : "/login");
+    const back = path && (path.startsWith("/admin") || path.startsWith("/plataforma")) && path !== "/admin";
+    redirect(back ? `/login?next=${encodeURIComponent(path)}` : "/login");
   }
+  return user;
+}
+
+/** Usuario del panel de un negocio. Las cuentas del equipo interno no tienen negocio: van a la Administración. */
+export async function requireClientUser() {
+  const user = await requireUser();
+  if (user.organizationInternal && user.platformAdmin) redirect("/plataforma");
+  return user;
+}
+
+/**
+ * Administración de la plataforma (/plataforma). En la versión instalada en PC no existe:
+ * esa instalación es de un solo negocio.
+ */
+export async function requirePlatformAdmin() {
+  if (isLocalMode()) notFound();
+  const user = await requireUser();
+  if (!user.platformAdmin) redirect("/admin");
   return user;
 }
 

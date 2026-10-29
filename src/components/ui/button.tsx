@@ -9,7 +9,7 @@ const base =
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-sm)] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-basil text-white hover:bg-basil-dark",
+  primary: "bg-basil text-white shadow-[0_6px_16px_-8px_var(--color-basil)] hover:bg-basil-dark",
   secondary: "border border-line bg-surface text-ink hover:border-ink-faint",
   ghost: "text-ink-soft hover:bg-line-soft hover:text-ink",
   danger: "border border-chile/30 bg-surface text-chile hover:bg-chile-tint",

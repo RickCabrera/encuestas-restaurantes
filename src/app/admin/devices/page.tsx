@@ -17,7 +17,7 @@ export const metadata = { title: "Tablets" };
 function status(d: { tokenHash: string | null; pairingCode: string | null; pairingExpiresAt: Date | null }) {
   if (d.tokenHash) return { label: "Vinculada", tone: "text-basil" };
   if (d.pairingCode && d.pairingExpiresAt && d.pairingExpiresAt > new Date())
-    return { label: "Esperando vinculación", tone: "text-[#7a5507]" };
+    return { label: "Esperando vinculación", tone: "text-mustard-ink" };
   return { label: "Sin vincular", tone: "text-ink-faint" };
 }
 

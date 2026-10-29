@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
 
 /** Diálogo modal accesible basado en <dialog> nativo. */
@@ -18,6 +18,7 @@ export function Modal({
   footer?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -28,6 +29,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => {
         if (e.target === ref.current) onClose();
@@ -35,7 +37,9 @@ export function Modal({
       className="m-auto w-[min(520px,calc(100vw-32px))] rounded-[var(--radius-lg)] border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/40"
     >
       <div className="flex items-center justify-between border-b border-line-soft px-5 py-4">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 id={titleId} className="text-lg font-semibold">
+          {title}
+        </h2>
         <button type="button" onClick={onClose} className="rounded p-1 text-ink-soft hover:bg-line-soft" aria-label="Cerrar">
           <X size={18} />
         </button>

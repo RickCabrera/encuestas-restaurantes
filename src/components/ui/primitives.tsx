@@ -49,7 +49,7 @@ export function PageHeader({
       {back ? <div className="mb-3 text-sm">{back}</div> : null}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[28px] font-semibold">{title}</h1>
+          <h1 className="text-[30px] font-bold tracking-[-0.02em]">{title}</h1>
           {description ? <p className="mt-1 max-w-2xl text-ink-soft">{description}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -72,8 +72,8 @@ type Tone = "neutral" | "green" | "amber" | "red";
 
 const tones: Record<Tone, string> = {
   neutral: "bg-line-soft text-ink-soft",
-  green: "bg-basil-tint text-basil-dark",
-  amber: "bg-mustard-tint text-[#7a5507]",
+  green: "bg-basil-tint text-basil-ink",
+  amber: "bg-mustard-tint text-mustard-ink",
   red: "bg-chile-tint text-chile",
 };
 
@@ -95,6 +95,61 @@ export function Notice({ tone = "neutral", children }: { tone?: Tone; children: 
   return (
     <div role="status" className={cn("rounded-[var(--radius-sm)] border px-4 py-3 text-sm", border[tone])}>
       {children}
+    </div>
+  );
+}
+
+/** Bloque con título y acciones a la derecha (fichas de la Administración). */
+export function Section({
+  title,
+  description,
+  actions,
+  children,
+  className,
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  actions?: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("mt-10 first:mt-0", className)}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[17px] font-semibold">{title}</h2>
+          {description ? <p className="mt-1 max-w-2xl text-sm text-ink-soft">{description}</p> : null}
+        </div>
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Indicador grande con etiqueta. */
+export function Stat({
+  value,
+  label,
+  tone,
+}: {
+  value: React.ReactNode;
+  label: React.ReactNode;
+  tone?: "red" | "green" | "amber";
+}) {
+  return (
+    <div className="panel px-5 py-4">
+      <p
+        className={cn(
+          "font-display text-[28px] leading-tight font-bold",
+          tone === "red" && "text-chile",
+          tone === "green" && "text-basil-ink",
+          tone === "amber" && "text-mustard-ink",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-sm text-ink-soft">{label}</p>
     </div>
   );
 }

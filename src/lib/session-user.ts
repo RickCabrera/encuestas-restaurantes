@@ -3,8 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { organizations, restaurants, userRestaurants, type User } from "@/db/schema";
 
-export type SessionUser = Pick<User, "id" | "name" | "email" | "role" | "notifyLowScores" | "organizationId"> & {
+export type SessionUser = Pick<
+  User,
+  "id" | "name" | "email" | "role" | "notifyLowScores" | "organizationId" | "platformAdmin"
+> & {
   organizationName: string;
+  /** Cadena del equipo de Sobremesa: sus cuentas solo usan la Administración, no el panel de un negocio. */
+  organizationInternal: boolean;
   /**
    * Restaurantes que puede ver: todos los de su cadena (admin) o los que tiene asignados (gerente).
    * Nunca incluye restaurantes de otra cadena, así que todo el alcance del panel sale de esta lista.
@@ -16,6 +21,8 @@ export type SessionUser = Pick<User, "id" | "name" | "email" | "role" | "notifyL
 export async function buildSessionUser(user: User): Promise<SessionUser | null> {
   const org = await db.query.organizations.findFirst({ where: eq(organizations.id, user.organizationId) });
   if (!org) return null;
+  // Cliente desactivado desde la Administración: su gente ya no entra (los administradores de la plataforma sí).
+  if (!org.active && !user.platformAdmin) return null;
   const inOrg = eq(restaurants.organizationId, user.organizationId);
   const rows =
     user.role === "ADMIN"
@@ -33,7 +40,9 @@ export async function buildSessionUser(user: User): Promise<SessionUser | null> 
     role: user.role,
     notifyLowScores: user.notifyLowScores,
     organizationId: user.organizationId,
+    platformAdmin: user.platformAdmin,
     organizationName: org.name,
+    organizationInternal: org.internal,
     restaurantIds: rows.map((r) => r.id),
   };
 }

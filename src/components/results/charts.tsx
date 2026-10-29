@@ -2,13 +2,14 @@
 
 import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+// Variables CSS: las gráficas siguen el color de acento y el tema claro/oscuro del panel.
 const C = {
-  basil: "#2f6b4f",
-  mustard: "#e3a21a",
-  chile: "#b8412b",
-  bars: "#c9d1cb",
-  grid: "#e8ece8",
-  ink: "#56625b",
+  basil: "var(--color-basil)",
+  mustard: "var(--color-mustard)",
+  chile: "var(--color-chile)",
+  bars: "var(--color-line)",
+  grid: "var(--color-line-soft)",
+  ink: "var(--color-ink-soft)",
 };
 
 function shortDay(day: string) {
@@ -50,7 +51,13 @@ export function TrendChart({ data, granularity }: { data: TrendDatum[]; granular
             axisLine={false}
           />
           <Tooltip
-            contentStyle={{ borderRadius: 8, border: `1px solid ${C.bars}`, fontSize: 13 }}
+            contentStyle={{
+              borderRadius: 10,
+              border: `1px solid ${C.bars}`,
+              fontSize: 13,
+              background: "var(--color-surface)",
+              color: "var(--color-ink)",
+            }}
             formatter={(v, name) => [v ?? "—", name]}
           />
           <Legend
@@ -106,7 +113,13 @@ export function NpsColumns({ data }: { data: { value: number; count: number }[] 
           <XAxis dataKey="value" tick={{ fill: C.ink, fontSize: 12 }} tickLine={false} axisLine={{ stroke: C.bars }} />
           <YAxis allowDecimals={false} tick={{ fill: C.ink, fontSize: 12 }} tickLine={false} axisLine={false} />
           <Tooltip
-            contentStyle={{ borderRadius: 8, fontSize: 13 }}
+            contentStyle={{
+              borderRadius: 10,
+              fontSize: 13,
+              border: `1px solid ${C.bars}`,
+              background: "var(--color-surface)",
+              color: "var(--color-ink)",
+            }}
             formatter={(v) => [v, "Respuestas"]}
             labelFormatter={(l) => `Calificación ${l}`}
           />

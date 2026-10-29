@@ -22,7 +22,7 @@ export async function resetDb() {
     migrated = true;
   }
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, restaurants, users, organizations CASCADE`,
+    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, app_settings, restaurants, users, organizations CASCADE`,
   );
 }
 
@@ -125,7 +125,9 @@ export async function adminSessionOver(restaurantIds: string[]): Promise<Session
     role: "ADMIN",
     notifyLowScores: false,
     organizationId: await defaultOrgId(),
+    platformAdmin: false,
     organizationName: "Pruebas",
+    organizationInternal: false,
     restaurantIds,
   };
 }

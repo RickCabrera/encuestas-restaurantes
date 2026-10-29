@@ -207,14 +207,14 @@ sealed class StartingForm : Form
         AutoScaleMode = AutoScaleMode.Dpi;
         Font = new Font("Segoe UI", 10f);
         ClientSize = new Size(460, 210);
-        BackColor = Color.FromArgb(246, 243, 236);
+        BackColor = Color.FromArgb(246, 244, 239);
 
         title.SetBounds(24, 22, 412, 34);
         title.Font = new Font("Segoe UI Semibold", 15f);
-        title.ForeColor = Color.FromArgb(47, 107, 79);
+        title.ForeColor = Color.FromArgb(14, 138, 110);
 
         detail.SetBounds(24, 62, 412, 76);
-        detail.ForeColor = Color.FromArgb(28, 38, 33);
+        detail.ForeColor = Color.FromArgb(23, 24, 28);
 
         progress.SetBounds(24, 150, 412, 12);
         progress.Style = ProgressBarStyle.Marquee;

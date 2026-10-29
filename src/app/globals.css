@@ -1,31 +1,98 @@
 @import "tailwindcss";
 
 /*
- * Paleta "sobremesa": verde albahaca como acento, mostaza para calificaciones,
- * rojo chile para alertas, sobre un fondo salvia muy claro.
+ * Paleta "sobremesa" (v2): fondo crema cálido, tinta casi negra y un color de acento que se elige
+ * en Administración → Ajustes. El acento llega en --accent / --accent-dark desde /theme.css; los
+ * valores de aquí son el respaldo (Jade). Los nombres "basil" se conservan por compatibilidad:
+ * hoy significan "color de acento".
  */
 @theme {
-  --color-paper: #f3f5f2;
-  --color-surface: #ffffff;
-  --color-ink: #1c2621;
-  --color-ink-soft: #56625b;
-  --color-ink-faint: #8a958e;
-  --color-line: #d9dfda;
-  --color-line-soft: #e8ece8;
-  --color-basil: #2f6b4f;
-  --color-basil-dark: #234f3b;
-  --color-basil-tint: #e3eee8;
-  --color-mustard: #e3a21a;
-  --color-mustard-tint: #fbf1d9;
-  --color-chile: #b8412b;
-  --color-chile-tint: #f8e4df;
+  --color-paper: var(--tone-paper);
+  --color-surface: var(--tone-surface);
+  --color-surface-2: var(--tone-surface-2);
+  --color-ink: var(--tone-ink);
+  --color-ink-soft: var(--tone-ink-soft);
+  --color-ink-faint: var(--tone-ink-faint);
+  --color-line: var(--tone-line);
+  --color-line-soft: var(--tone-line-soft);
+  --color-basil: var(--accent, #0e8a6e);
+  --color-basil-dark: var(--accent-dark, #0a6b55);
+  --color-basil-tint: var(--tone-accent-tint);
+  --color-basil-ink: var(--tone-accent-ink);
+  --color-mustard: #e8a317;
+  --color-mustard-tint: var(--tone-mustard-tint);
+  --color-mustard-ink: var(--tone-mustard-ink);
+  --color-chile: var(--tone-chile);
+  --color-chile-tint: var(--tone-chile-tint);
+  --color-night: #101216;
+  --color-night-2: #181b21;
 
   --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+}
+
+/* Tonos claros (por defecto: sitio público, encuesta, tablet y paneles en tema claro). */
+:root,
+[data-theme="light"] {
+  --tone-paper: #f6f4ef;
+  --tone-surface: #ffffff;
+  --tone-surface-2: #faf9f6;
+  --tone-ink: #17181c;
+  --tone-ink-soft: #5b5e66;
+  --tone-ink-faint: #8e9098;
+  --tone-line: #e4e1da;
+  --tone-line-soft: #efece6;
+  --tone-accent-tint: color-mix(in oklab, var(--accent, #0e8a6e) 12%, #ffffff);
+  --tone-accent-ink: var(--accent-dark, #0a6b55);
+  --tone-mustard-tint: #fcf1d6;
+  --tone-mustard-ink: #7a5507;
+  --tone-chile: #c2412b;
+  --tone-chile-tint: #fbe6e1;
+  color-scheme: light;
+}
+
+/*
+ * Los --color-* de @theme se resuelven donde se declaran (:root). Dentro de un contenedor con
+ * data-theme se vuelven a declarar para que tomen los tonos de ese contenedor.
+ */
+[data-theme] {
+  --color-paper: var(--tone-paper);
+  --color-surface: var(--tone-surface);
+  --color-surface-2: var(--tone-surface-2);
+  --color-ink: var(--tone-ink);
+  --color-ink-soft: var(--tone-ink-soft);
+  --color-ink-faint: var(--tone-ink-faint);
+  --color-line: var(--tone-line);
+  --color-line-soft: var(--tone-line-soft);
+  --color-basil-tint: var(--tone-accent-tint);
+  --color-basil-ink: var(--tone-accent-ink);
+  --color-mustard-tint: var(--tone-mustard-tint);
+  --color-mustard-ink: var(--tone-mustard-ink);
+  --color-chile: var(--tone-chile);
+  --color-chile-tint: var(--tone-chile-tint);
+}
+
+/* Tema oscuro de los paneles (interruptor "Tema oscuro" del menú). */
+[data-theme="dark"] {
+  --tone-paper: #0c0d10;
+  --tone-surface: #16181d;
+  --tone-surface-2: #1b1e24;
+  --tone-ink: #f1f1f3;
+  --tone-ink-soft: #a5a8b0;
+  --tone-ink-faint: #6f727b;
+  --tone-line: #2a2d35;
+  --tone-line-soft: #21242a;
+  --tone-accent-tint: color-mix(in oklab, var(--accent, #0e8a6e) 24%, #16181d);
+  --tone-accent-ink: color-mix(in oklab, var(--accent, #0e8a6e) 55%, #ffffff);
+  --tone-mustard-tint: #3a2f12;
+  --tone-mustard-ink: #f3c860;
+  --tone-chile: #f0705a;
+  --tone-chile-tint: #3b1d18;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -90,6 +157,9 @@
   .link {
     @apply font-medium text-basil underline-offset-2 hover:underline;
   }
+  [data-theme="dark"] .link {
+    color: color-mix(in oklab, var(--color-basil) 70%, white);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -116,4 +186,104 @@
 html:has(.kiosk-root),
 html:has(.kiosk-root) body {
   overscroll-behavior: none;
+}
+
+/* ───────── Página de inicio: animaciones del hero ───────── */
+@keyframes sm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes sm-star {
+  0%,
+  8% {
+    color: rgba(255, 255, 255, 0.18);
+    transform: scale(0.85);
+  }
+  14% {
+    color: #e8a317;
+    transform: scale(1.25);
+  }
+  20%,
+  82% {
+    color: #e8a317;
+    transform: scale(1);
+  }
+  92%,
+  100% {
+    color: rgba(255, 255, 255, 0.18);
+    transform: scale(0.85);
+  }
+}
+@keyframes sm-pop {
+  0%,
+  10% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  18%,
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+@keyframes sm-grow {
+  0% {
+    transform: scaleY(0.15);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+@keyframes sm-progress {
+  0% {
+    width: 8%;
+  }
+  60%,
+  100% {
+    width: 72%;
+  }
+}
+@keyframes sm-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-basil) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+.sm-float {
+  animation: sm-float 6s ease-in-out infinite;
+}
+.sm-float-slow {
+  animation: sm-float 8s ease-in-out infinite;
+}
+.sm-star {
+  animation: sm-star 6s ease-in-out infinite;
+}
+.sm-pop {
+  animation: sm-pop 6s ease-in-out infinite both;
+}
+.sm-bar {
+  transform-origin: bottom;
+  animation: sm-grow 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sm-progress {
+  animation: sm-progress 6s ease-in-out infinite;
+}
+.sm-pulse {
+  animation: sm-pulse 2.4s ease-in-out infinite;
+}
+html:has(.landing-root) {
+  scroll-behavior: smooth;
 }

@@ -20,8 +20,16 @@ export async function listAccessibleRestaurants(user: SessionUser, opts: { inclu
  * Restaurante por id, SIN revisar permisos. Solo para quien ya probó de otra forma que le toca
  * (la tablet vinculada pide el suyo). En el panel usa getAccessibleRestaurant.
  */
+/** Restaurante para la tablet. `active` es false también si el cliente (la cadena) está desactivado. */
 export async function getRestaurant(id: string) {
-  return db.query.restaurants.findFirst({ where: eq(restaurants.id, id), columns: { logoData: false } });
+  const r = await db.query.restaurants.findFirst({
+    where: eq(restaurants.id, id),
+    columns: { logoData: false },
+    with: { organization: { columns: { active: true } } },
+  });
+  if (!r) return undefined;
+  const { organization, ...rest } = r;
+  return { ...rest, active: rest.active && organization.active };
 }
 
 /** Restaurante del panel: undefined si no existe, es de otra cadena o el usuario no lo tiene asignado. */

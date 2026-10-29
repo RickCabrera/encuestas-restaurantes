@@ -189,7 +189,7 @@ test("cadena nueva: invite:org → registro → cadena vacía → restaurante �
     }
   }
   await demo.goto("/admin/users");
-  await expect(demo.getByText("admin@demo.com")).toBeVisible();
+  await expect(demo.getByRole("main").getByText("admin@demo.com")).toBeVisible();
   // La invitación pendiente del gerente ya se usó, y el enlace de sobra de invite:org no es de ninguna cadena.
   await expect(demo.getByText("Invitaciones pendientes")).toHaveCount(0);
   const ownerId = await idOf(page, "/admin/users", OWNER.name);

@@ -342,7 +342,7 @@ export function KioskApp() {
   }
 
   const brand = config?.restaurant;
-  const brandBg = brand?.primaryColor ?? "#2f6b4f";
+  const brandBg = brand?.primaryColor ?? "#0e8a6e";
   const brandInk = readableOn(brandBg);
 
   return (
@@ -682,8 +682,8 @@ function StaffMenu({
                   </p>
                 ) : null}
                 <p className="mt-4 text-[17px] text-ink-soft">
-                  La tablet dejará de mostrar la encuesta y volverá a pedir un código. Podrás vincularla de nuevo con un código
-                  de este u otro restaurante.
+                  La tablet dejará de mostrar la encuesta y volverá a pedir un código. Podrás vincularla de nuevo con un código de
+                  este u otro restaurante.
                 </p>
                 <div className="mt-6 grid gap-3">
                   <MenuButton

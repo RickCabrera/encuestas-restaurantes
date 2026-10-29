@@ -269,7 +269,7 @@ Seguridad:
 ## Para quien mantiene el instalador
 
 - Todo está en `installer/`. `installer\build.ps1 -Version 1.2.0` arma el paquete y, si Inno Setup 6 está instalado, el `Setup.exe` en `installer\build\out`. Con `-SkipSetup` solo arma el paquete; no instala nada en la PC donde corre.
-- El acceso directo es `SobremesaEncuestas.exe`, un programa pequeño (`installer/launcher/Launcher.cs`) que `build.ps1` compila con el `csc.exe` que trae Windows; no agrega dependencias. El icono es `installer/assets/sobremesa.ico` (se regenera con `make-icon.ps1`).
+- El acceso directo es `SobremesaEncuestas.exe`, un programa pequeño (`installer/launcher/Launcher.cs`) que `build.ps1` compila con el `csc.exe` que trae Windows; no agrega dependencias. El icono es `installer/assets/sobremesa.ico` (se regenera con `python installer/assets/make-icon.py`).
 - `npm run test:e2e:local` prueba el paquete ya armado (`build.ps1 -SkipSetup`) por `localhost` y por la IP de la red: login, cookie de sesión, sección Tablets y `/inicio`. No instala nada; usa la base de E2E.
 - `installer\smoke-test.ps1` **sí instala** servicios y PostgreSQL: es para el runner de GitHub Actions, no para una PC de trabajo.
 - Las versiones de Node, PostgreSQL y WinSW, con su SHA-256, están en `installer/versions.json`. Para subir una versión menor cambia la URL y el hash.

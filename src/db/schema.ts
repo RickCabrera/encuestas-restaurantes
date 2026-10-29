@@ -37,6 +37,10 @@ export const questionMetric = pgEnum("question_metric", [
 export const responseChannel = pgEnum("response_channel", ["KIOSK", "QR"]);
 /** USER: cuenta dentro de una cadena que ya existe. NEW_ORG: da de alta una cadena nueva con su administrador. */
 export const inviteKind = pgEnum("invite_kind", ["USER", "NEW_ORG"]);
+/** Cómo se pagó una mensualidad (los pagos se capturan a mano en el panel de Administración). */
+export const paymentMethod = pgEnum("payment_method", ["TRANSFER", "CASH", "CARD", "OTHER"]);
+/** Estado de una solicitud de demo que llegó desde la landing. */
+export const demoRequestStatus = pgEnum("demo_request_status", ["NEW", "CONTACTED", "CONVERTED", "DISCARDED"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -49,6 +53,16 @@ const timestamps = {
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  /** Desactivada: nadie de la cadena entra al panel y sus encuestas (QR y tablets) dejan de recibir respuestas. */
+  active: boolean("active").notNull().default(true),
+  /** Cadena del equipo que opera Sobremesa (administradores de la plataforma). No aparece como cliente. */
+  internal: boolean("internal").notNull().default(false),
+  /** Día del mes (1–28) en que vence la mensualidad. */
+  billingDay: integer("billing_day").notNull().default(5),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  notes: text("notes"),
   ...timestamps,
 });
 
@@ -68,6 +82,9 @@ export const users = pgTable(
     notifyLowScores: boolean("notify_low_scores").notNull().default(false),
     /** Se incrementa al cambiar la contraseña para invalidar sesiones previas. */
     sessionVersion: integer("session_version").notNull().default(1),
+    /** Puede entrar a la Administración de la plataforma (/plataforma) y ver a todos los clientes. */
+    platformAdmin: boolean("platform_admin").notNull().default(false),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [index("users_organization_idx").on(t.organizationId)],
@@ -257,6 +274,53 @@ export const signupInvites = pgTable(
   ],
 );
 
+/** Mensualidades de cada cliente. Un pago anulado se conserva (con quién y por qué) y se puede restaurar. */
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Mes que cubre, `YYYY-MM`. */
+    period: text("period").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    method: paymentMethod("method").notNull(),
+    /** Día en que se pagó, `YYYY-MM-DD`. */
+    paidOn: text("paid_on").notNull(),
+    notes: text("notes"),
+    recordedById: uuid("recorded_by_id").references(() => users.id, { onDelete: "set null" }),
+    recordedByName: text("recorded_by_name").notNull(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedByName: text("voided_by_name"),
+    voidReason: text("void_reason"),
+    ...timestamps,
+  },
+  (t) => [index("payments_org_period_idx").on(t.organizationId, t.period)],
+);
+
+/** Personas interesadas que dejaron sus datos en la landing para pedir una demo. */
+export const demoRequests = pgTable(
+  "demo_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    business: text("business").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    city: text("city"),
+    branches: text("branches"),
+    message: text("message"),
+    status: demoRequestStatus("status").notNull().default("NEW"),
+    notes: text("notes"),
+    /** Cliente que se dio de alta a partir de esta solicitud, si ya se convirtió. */
+    organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps,
+  },
+  (t) => [index("demo_requests_status_idx").on(t.status, t.createdAt)],
+);
+
 /** Contadores de ventana fija para rate limiting (funciona en serverless). */
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
@@ -269,6 +333,11 @@ export const rateLimits = pgTable("rate_limits", {
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
   restaurants: many(restaurants),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  organization: one(organizations, { fields: [payments.organizationId], references: [organizations.id] }),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -338,6 +407,10 @@ export type Question = typeof questions.$inferSelect;
 export type Device = typeof devices.$inferSelect;
 export type Response = typeof responses.$inferSelect;
 export type Answer = typeof answers.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
+export type DemoRequest = typeof demoRequests.$inferSelect;
+export type PaymentMethod = (typeof paymentMethod.enumValues)[number];
+export type DemoRequestStatus = (typeof demoRequestStatus.enumValues)[number];
 export type SignupInvite = typeof signupInvites.$inferSelect;
 export type QuestionType = (typeof questionType.enumValues)[number];
 export type QuestionMetric = (typeof questionMetric.enumValues)[number];

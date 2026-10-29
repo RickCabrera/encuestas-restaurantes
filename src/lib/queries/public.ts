@@ -5,10 +5,15 @@ import { db } from "@/db";
 import { restaurants, surveys } from "@/db/schema";
 
 export async function getRestaurantBySlug(slug: string) {
-  return db.query.restaurants.findFirst({
+  const r = await db.query.restaurants.findFirst({
     where: eq(restaurants.slug, slug),
     columns: { logoData: false },
+    with: { organization: { columns: { active: true } } },
   });
+  if (!r) return undefined;
+  const { organization, ...rest } = r;
+  // Si el cliente (la cadena) está desactivado, sus restaurantes no reciben encuestas.
+  return { ...rest, active: rest.active && organization.active };
 }
 
 /** Encuesta activa del restaurante, en el formato que usa la pantalla del comensal. */
