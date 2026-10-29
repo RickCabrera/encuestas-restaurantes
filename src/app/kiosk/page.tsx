@@ -3,6 +3,8 @@ import { KioskApp } from "@/components/kiosk/kiosk-app";
 
 export const metadata: Metadata = {
   title: "Encuesta",
+  // Solo aquí: es lo que hace que el navegador ofrezca instalar la app del modo tablet.
+  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Encuesta", statusBarStyle: "black-translucent" },
   icons: { apple: "/icons/180" },
 };
