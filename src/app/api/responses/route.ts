@@ -1,5 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { authenticateDevice } from "@/lib/device-auth";
+import { licenseAllows } from "@/lib/license-local";
 import { logger } from "@/lib/logger";
 import { pruneRateLimits, rateLimit } from "@/lib/rate-limit";
 import { ipFromRequest } from "@/lib/request";
@@ -11,6 +12,9 @@ import { SubmitError, submitResponse, submitSchema } from "@/lib/submit-response
  * - Sin token → canal QR (celular del comensal).
  */
 export async function POST(req: Request) {
+  if (!(await licenseAllows())) {
+    return NextResponse.json({ error: "Esta instalación de Sobremesa no tiene licencia activa." }, { status: 402 });
+  }
   const ip = ipFromRequest(req);
   let body: unknown;
   try {

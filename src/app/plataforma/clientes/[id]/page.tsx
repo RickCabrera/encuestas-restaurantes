@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   createClientAdminInviteAction,
   deleteClientAction,
+  revokeInstallationAction,
   setClientActiveAction,
   updateClientAction,
 } from "@/app/actions/platform";
@@ -15,7 +16,14 @@ import { BILLING_STATUS_LABEL, formatPeriod } from "@/lib/billing";
 import { formatDateTime } from "@/lib/dates";
 import { isUuid } from "@/lib/ids";
 import { isProtectedOrgName } from "@/lib/orgs";
-import { clientBillingStatus, getClientOrg, listClientRestaurants, listClients, listClientUsers } from "@/lib/queries/platform";
+import {
+  clientBillingStatus,
+  getClientOrg,
+  listClientRestaurants,
+  listClients,
+  listClientUsers,
+  listInstallations,
+} from "@/lib/queries/platform";
 import { LinkModal } from "../../link-modal";
 
 export const metadata = { title: "Cliente" };
@@ -25,11 +33,12 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   if (!isUuid(id)) notFound();
   const org = await getClientOrg(id);
   if (!org) notFound();
-  const [[summary], restaurants, people, billing] = await Promise.all([
+  const [[summary], restaurants, people, billing, pcs] = await Promise.all([
     listClients({ id }),
     listClientRestaurants(id),
     listClientUsers(id),
     clientBillingStatus(org),
+    listInstallations(id),
   ]);
   const isDemo = isProtectedOrgName(org.name);
   const billingTone = billing.status === "PAID" ? "green" : billing.status === "OVERDUE" ? "red" : "amber";
@@ -164,6 +173,45 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 {u.platformAdmin ? <Badge tone="amber">Administración</Badge> : null}
                 <Badge>{u.role === "ADMIN" ? "Administrador" : "Gerente"}</Badge>
                 {u.active ? null : <Badge tone="red">Desactivado</Badge>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section
+        title="Instalaciones en PC"
+        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó con la cuenta del negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en su siguiente revisión (o, sin internet, en máximo 7 días)."
+      >
+        {pcs.length === 0 ? (
+          <div className="panel px-5 py-6 text-sm text-ink-soft">No tiene ninguna PC activada.</div>
+        ) : (
+          <ul className="panel divide-y divide-line-soft">
+            {pcs.map((pc) => (
+              <li key={pc.id} className={`flex flex-wrap items-center gap-3 px-5 py-4 ${pc.revokedAt ? "opacity-60" : ""}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold">
+                    {pc.name}
+                    {pc.appVersion ? <Badge>v{pc.appVersion}</Badge> : null}
+                    {pc.revokedAt ? <Badge tone="red">Dada de baja</Badge> : <Badge tone="green">Activa</Badge>}
+                  </p>
+                  <p className="mt-0.5 text-sm text-ink-soft">
+                    Activada por {pc.activatedByEmail} el {formatDateTime(pc.createdAt)} · última revisión{" "}
+                    {formatDateTime(pc.lastSeenAt)}
+                    {pc.revokedAt ? ` · dada de baja por ${pc.revokedByName} el ${formatDateTime(pc.revokedAt)}` : ""}
+                  </p>
+                </div>
+                {pc.revokedAt ? null : (
+                  <form action={revokeInstallationAction.bind(null, pc.id)}>
+                    <ConfirmSubmit
+                      variant="danger"
+                      size="sm"
+                      message={`¿Dar de baja "${pc.name}"? Esa PC dejará de funcionar y tendrá que activarse otra vez con la cuenta del negocio.`}
+                    >
+                      Dar de baja
+                    </ConfirmSubmit>
+                  </form>
+                )}
               </li>
             ))}
           </ul>

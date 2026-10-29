@@ -4,6 +4,7 @@ import { SpecForm } from "@/components/panel/spec-form";
 import { Badge, PageHeader } from "@/components/ui/primitives";
 import { db } from "@/db";
 import { APP_TIMEZONE } from "@/lib/dates";
+import { licenseSigningConfigured } from "@/lib/license-token";
 import { appUrl } from "@/lib/request";
 
 export const metadata = { title: "Conexiones" };
@@ -112,6 +113,20 @@ export default async function ConnectionsPage() {
           <div className="mt-4">
             <SpecForm action={sendTestEmailAction} fields={[]} submitLabel="Enviar correo de prueba" pendingText="Enviando…" />
           </div>
+        </Card>
+
+        <Card
+          title="Licencias de las PCs"
+          ok={licenseSigningConfigured()}
+          status={licenseSigningConfigured() ? "Firmando" : "Sin llave"}
+        >
+          <p>
+            Las instalaciones en PC (el .exe) se activan con la cuenta del negocio y renuevan aquí su licencia una vez al día.
+            {licenseSigningConfigured()
+              ? " La llave de firma está configurada."
+              : " Falta la llave de firma: sin ella ninguna PC puede activarse ni renovarse."}
+          </p>
+          <Vars names={["LICENSE_PRIVATE_KEY"]} />
         </Card>
 
         <Card title="Dirección pública" ok={configuredUrl ? true : "warn"} status={configuredUrl ? "Configurada" : "Sin APP_URL"}>

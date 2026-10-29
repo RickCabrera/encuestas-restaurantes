@@ -5,6 +5,8 @@
 //   npm run test:e2e:local
 //
 // No instala nada: usa installer/build/payload/app y la misma base de E2E que `npm run test:e2e`.
+// Desde las licencias de PC, la base de E2E necesita una licencia vigente (actívala una vez en
+// /activar con una cuenta de la nube y LICENSE_SERVER_URL apuntando a ella).
 import { networkInterfaces } from "node:os";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -14,7 +16,8 @@ const DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://postgres:postgr
 function lanIp() {
   if (process.env.LAN_IP) return process.env.LAN_IP;
   for (const list of Object.values(networkInterfaces())) {
-    for (const net of list ?? []) if (net.family === "IPv4" && !net.internal && !net.address.startsWith("169.254.")) return net.address;
+    for (const net of list ?? [])
+      if (net.family === "IPv4" && !net.internal && !net.address.startsWith("169.254.")) return net.address;
   }
   throw new Error("Esta PC no tiene red: define LAN_IP con su IP local.");
 }

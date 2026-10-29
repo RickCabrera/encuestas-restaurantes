@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Notice } from "@/components/ui/primitives";
 import { getSessionUser } from "@/lib/auth";
+import { requireLicense } from "@/lib/license-local";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Iniciar sesión" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
+  await requireLicense();
   if (await getSessionUser()) redirect("/admin");
   const sp = await searchParams;
   return (

@@ -19,6 +19,7 @@ const UNPAIR_FLUSH_MS = 8000;
 const UNPAIR_REQUEST_MS = 5000;
 
 const UNPAIRED_NOTICE = "Esta tablet fue desvinculada desde el panel. Escribe un código nuevo.";
+const UNLICENSED_NOTICE = "El sistema de encuestas de este restaurante no tiene licencia activa. Avisa al encargado.";
 const RESTAURANT_GONE_NOTICE = "El restaurante de esta tablet ya no existe. Escribe un código nuevo.";
 
 /**
@@ -69,6 +70,11 @@ export function KioskApp() {
         unpair(UNPAIRED_NOTICE);
         return;
       }
+      // La instalación en PC se quedó sin licencia (cliente desactivado o instalación revocada).
+      if (res.status === 402) {
+        unpair(UNLICENSED_NOTICE);
+        return;
+      }
       // El restaurante se borró: sin esto la tablet se quedaría con una encuesta y un PIN que ya no existen.
       if (res.status === 404) {
         unpair(RESTAURANT_GONE_NOTICE);
@@ -107,8 +113,8 @@ export function KioskApp() {
           break;
         }
         setOnline(true);
-        if (res.status === 401) {
-          unpair(UNPAIRED_NOTICE);
+        if (res.status === 401 || res.status === 402) {
+          unpair(res.status === 402 ? UNLICENSED_NOTICE : UNPAIRED_NOTICE);
           return;
         }
         if (res.status === 429 || res.status >= 500) {

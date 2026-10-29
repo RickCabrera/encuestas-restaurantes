@@ -15,18 +15,20 @@
 2. En el mismo proyecto: **+ New → Database → PostgreSQL**.
 3. En el servicio de la app, **Variables**:
 
-   | Variable                               | Valor                                                                   |
-   | -------------------------------------- | ----------------------------------------------------------------------- |
-   | `DATABASE_URL`                         | `${{Postgres.DATABASE_URL}}` (referencia a la base, red privada)        |
-   | `DATABASE_POOL_MAX`                    | `5`                                                                     |
-   | `AUTH_SECRET`                          | 32+ caracteres aleatorios (`openssl rand -base64 32`)                   |
-   | `APP_URL`                              | `https://<dominio público>` sin diagonal final (los QR llevan esta URL) |
-   | `APP_TIMEZONE`                         | `America/Mexico_City`                                                   |
-   | `PLATFORM_ADMIN_EMAIL`                 | correo del primer administrador de la plataforma                        |
-   | `PLATFORM_ADMIN_NAME`                  | su nombre                                                               |
-   | `PLATFORM_ADMIN_PASSWORD`              | contraseña inicial (8+). Solo se usa si la cuenta no existe             |
-   | `RESEND_API_KEY`, `EMAIL_FROM`         | opcional: correos (recuperar contraseña, alertas, solicitudes de demo)  |
-   | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | opcional                                                                |
+   | Variable                  | Valor                                                                                                                                            |
+   | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `DATABASE_URL`            | `${{Postgres.DATABASE_URL}}` (referencia a la base, red privada)                                                                                 |
+   | `DATABASE_POOL_MAX`       | `5`                                                                                                                                              |
+   | `AUTH_SECRET`             | 32+ caracteres aleatorios (`openssl rand -base64 32`)                                                                                            |
+   | `APP_URL`                 | `https://<dominio público>` sin diagonal final (los QR llevan esta URL)                                                                          |
+   | `APP_TIMEZONE`            | `America/Mexico_City`                                                                                                                            |
+   | `PLATFORM_ADMIN_EMAIL`    | correo del primer administrador de la plataforma                                                                                                 |
+   | `PLATFORM_ADMIN_NAME`     | su nombre                                                                                                                                        |
+   | `PLATFORM_ADMIN_PASSWORD` | contraseña inicial (8+). Solo se usa si la cuenta no existe                                                                                      |
+   | `LICENSE_PRIVATE_KEY`     | llave privada Ed25519 (base64, una línea) con la que la nube firma las licencias de las PCs. Su llave pública está en `src/lib/license-token.ts` |
+
+| `RESEND_API_KEY`, `EMAIL_FROM` | opcional: correos (recuperar contraseña, alertas, solicitudes de demo) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | opcional |
 
 4. **Settings → Networking → Generate Domain** (o un dominio propio con su CNAME). Pon ese dominio en `APP_URL` y vuelve a desplegar.
 5. Abre `https://<dominio>/login` con `PLATFORM_ADMIN_EMAIL`: entras a la **Administración** (`/plataforma`). Desde ahí das de alta clientes (enlace de un solo uso), ves solicitudes de demo, pagos, conexiones, el color de la interfaz y agregas a más administradores.

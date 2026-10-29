@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { demoRequests, organizations, payments, users, type DemoRequestStatus } from "@/db/schema";
+import { demoRequests, installations, organizations, payments, users, type DemoRequestStatus } from "@/db/schema";
 import { billingStatus, periodOf, type BillingStatus } from "@/lib/billing";
 import { APP_TIMEZONE, dayInTz } from "@/lib/dates";
 
@@ -166,6 +166,13 @@ export async function clientBillingStatus(org: { id: string; billingDay: number;
       paidPeriods: new Set(pays.map((p) => p.period)),
     }),
   };
+}
+
+export async function listInstallations(orgId: string) {
+  return db.query.installations.findMany({
+    where: eq(installations.organizationId, orgId),
+    orderBy: [asc(installations.revokedAt), desc(installations.lastSeenAt)],
+  });
 }
 
 export async function listPayments(orgId: string) {
