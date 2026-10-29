@@ -299,6 +299,32 @@ export const payments = pgTable(
   (t) => [index("payments_org_period_idx").on(t.organizationId, t.period)],
 );
 
+/**
+ * Instalaciones en PC (el .exe) de un cliente. Cada una se activa con la cuenta del negocio en la
+ * nube y renueva su licencia periódicamente; si el cliente se desactiva o la instalación se revoca,
+ * deja de renovarse y se bloquea. Solo existe en la nube.
+ */
+export const installations = pgTable(
+  "installations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Nombre de la PC, para reconocerla en la Administración. */
+    name: text("name").notNull(),
+    /** SHA-256 del secreto que guarda la PC; con él pide renovar su licencia. */
+    secretHash: text("secret_hash").notNull().unique(),
+    appVersion: text("app_version"),
+    activatedByEmail: text("activated_by_email").notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedByName: text("revoked_by_name"),
+    ...timestamps,
+  },
+  (t) => [index("installations_organization_idx").on(t.organizationId)],
+);
+
 /** Personas interesadas que dejaron sus datos en la landing para pedir una demo. */
 export const demoRequests = pgTable(
   "demo_requests",
@@ -334,6 +360,10 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
   restaurants: many(restaurants),
   payments: many(payments),
+}));
+
+export const installationsRelations = relations(installations, ({ one }) => ({
+  organization: one(organizations, { fields: [installations.organizationId], references: [organizations.id] }),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({
@@ -409,6 +439,7 @@ export type Response = typeof responses.$inferSelect;
 export type Answer = typeof answers.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type DemoRequest = typeof demoRequests.$inferSelect;
+export type Installation = typeof installations.$inferSelect;
 export type PaymentMethod = (typeof paymentMethod.enumValues)[number];
 export type DemoRequestStatus = (typeof demoRequestStatus.enumValues)[number];
 export type SignupInvite = typeof signupInvites.$inferSelect;

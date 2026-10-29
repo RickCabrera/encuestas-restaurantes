@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { demoRequests, organizations, payments, users } from "@/db/schema";
+import { demoRequests, installations, organizations, payments, users } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { BILLING_DAY_MAX, BILLING_DAY_MIN, isValidPeriod, parseMoney } from "@/lib/billing";
@@ -141,6 +141,21 @@ export async function deleteClientAction(orgId: string, _prev: ActionState, fd: 
   logger.warn("platform.client_deleted", { by: me.id, organizationId: org.id, counts: result?.counts });
   revalidateClients();
   redirect("/plataforma/clientes?borrado=1");
+}
+
+/** Dar de baja una instalación en PC: deja de renovar su licencia y se bloquea en su siguiente revisión. */
+export async function revokeInstallationAction(installationId: string) {
+  const me = await requirePlatformAdmin();
+  if (!isUuid(installationId)) return;
+  const [row] = await db
+    .update(installations)
+    .set({ revokedAt: new Date(), revokedByName: me.name })
+    .where(eq(installations.id, installationId))
+    .returning({ organizationId: installations.organizationId });
+  if (row) {
+    logger.warn("platform.installation_revoked", { by: me.id, installationId });
+    revalidateClients(row.organizationId);
+  }
 }
 
 // ───────────────────────── Solicitudes ─────────────────────────

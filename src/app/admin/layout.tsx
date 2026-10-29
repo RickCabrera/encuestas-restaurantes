@@ -5,6 +5,7 @@ import { Notice } from "@/components/ui/primitives";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { isLocalMode } from "@/lib/app-mode";
 import { requireClientUser } from "@/lib/auth";
+import { requireLicense } from "@/lib/license-local";
 import { RESTAURANT_COOKIE } from "@/lib/filters";
 import { listAccessibleRestaurants } from "@/lib/queries/restaurants";
 import { changedLocalAddress } from "@/lib/request";
@@ -13,6 +14,7 @@ import { RestaurantSelector } from "./restaurant-selector";
 import { Sidebar } from "./sidebar";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  await requireLicense();
   const user = await requireClientUser();
   const restaurants = await listAccessibleRestaurants(user);
   const selected = (await cookies()).get(RESTAURANT_COOKIE)?.value ?? "all";

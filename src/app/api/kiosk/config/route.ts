@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateDevice } from "@/lib/device-auth";
 import { logoUrl } from "@/lib/ids";
+import { licenseAllows } from "@/lib/license-local";
 import { getActiveRunnerSurvey } from "@/lib/queries/public";
 import { getRestaurant } from "@/lib/queries/restaurants";
 
@@ -8,6 +9,9 @@ export const dynamic = "force-dynamic";
 
 /** Configuración que descarga la tablet: restaurante, tiempos, PIN y encuesta activa. */
 export async function GET(req: Request) {
+  if (!(await licenseAllows())) {
+    return NextResponse.json({ error: "Esta instalación de Sobremesa no tiene licencia activa." }, { status: 402 });
+  }
   const device = await authenticateDevice(req);
   if (!device) return NextResponse.json({ error: "Tablet no vinculada" }, { status: 401 });
   const r = await getRestaurant(device.restaurantId);

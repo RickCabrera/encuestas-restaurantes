@@ -286,8 +286,8 @@ function Update-ListoPage([string]$InviteLink = '') {
   }
 
   if ($InviteLink) {
-    $invite = '<h2>3. Crea tu cadena y el usuario maestro</h2>' +
-      '<p>Toca el botón <strong>Crear mi cadena</strong>, aquí abajo. Escribes el nombre de tu cadena, tu nombre, tu correo y una contraseña, y listo.</p>' +
+    $invite = '<h2>3. Activa Sobremesa con tu cuenta</h2>' +
+      '<p>Toca el botón <strong>Activar Sobremesa</strong>, aquí abajo, y entra con el correo y la contraseña de la cuenta de tu negocio en la web de Sobremesa (la que te dimos al contratar). Esta PC necesita internet para activarse y para renovar su licencia una vez al día; sin internet sigue funcionando hasta 7 días.</p>' +
       '<p class="note">Otra forma, desde otro equipo de la misma red: abre este enlace. Sirve una sola vez y vence en 7 días.<br /><span class="link">' + (ConvertTo-Html $InviteLink) + '</span></p>'
   } else {
     $invite = '<h2>3. Entra al sistema</h2>' +

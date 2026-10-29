@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { logoUrl } from "@/lib/ids";
+import { licenseAllows } from "@/lib/license-local";
 import { getActiveRunnerSurvey, getRestaurantBySlug } from "@/lib/queries/public";
 import { SLUG_REGEX } from "@/lib/slug";
 import { PublicSurvey } from "./public-survey";
@@ -36,7 +37,8 @@ export default async function PublicSurveyPage({ params, searchParams }: Props) 
     logoUrl: restaurant.logoMime ? logoUrl(restaurant) : null,
   };
 
-  if (!restaurant.active) {
+  // En la PC sin licencia vigente, el QR tampoco recibe respuestas.
+  if (!restaurant.active || !(await licenseAllows())) {
     return (
       <Unavailable
         restaurant={brand}
