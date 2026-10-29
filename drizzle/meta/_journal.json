@@ -22,6 +22,20 @@
       "when": 1791218647502,
       "tag": "0002_organizations",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792989645562,
+      "tag": "0003_app_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793262791749,
+      "tag": "0004_platform_admin",
+      "breakpoints": true
     }
   ]
 }

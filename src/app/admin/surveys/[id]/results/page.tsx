@@ -98,8 +98,8 @@ function QuestionResult({
     return (
       <DistributionChart
         data={[
-          { label: "Sí", count: yes, color: "#2f6b4f" },
-          { label: "No", count: no, color: "#8a958e" },
+          { label: "Sí", count: yes, color: "var(--color-basil)" },
+          { label: "No", count: no, color: "var(--color-ink-faint)" },
         ]}
       />
     );
@@ -116,7 +116,7 @@ function QuestionResult({
           data={[5, 4, 3, 2, 1].map((v) => ({
             label: `${v} ★`,
             count: rows.find((r) => r.valueNumber === v)?.n ?? 0,
-            color: v <= 2 ? "#b8412b" : "#e3a21a",
+            color: v <= 2 ? "var(--color-chile)" : "var(--color-mustard)",
           }))}
         />
       </div>

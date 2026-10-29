@@ -48,10 +48,17 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
 
   const survey = await db.query.surveys.findFirst({
     where: eq(surveys.id, input.surveyId),
-    with: { questions: true, restaurant: { columns: { id: true, name: true, active: true, organizationId: true } } },
+    with: {
+      questions: true,
+      restaurant: {
+        columns: { id: true, name: true, active: true, organizationId: true },
+        with: { organization: { columns: { active: true } } },
+      },
+    },
   });
   if (!survey || survey.status === "DRAFT") throw new SubmitError("La encuesta no está disponible", 404);
-  if (!survey.restaurant.active) throw new SubmitError("El restaurante no está recibiendo encuestas", 403);
+  if (!survey.restaurant.active || !survey.restaurant.organization.active)
+    throw new SubmitError("El restaurante no está recibiendo encuestas", 403);
 
   const now = Date.now();
   let submittedAt = new Date(now);

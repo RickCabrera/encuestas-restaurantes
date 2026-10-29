@@ -4,6 +4,8 @@ Sistema para que un grupo de restaurantes cree encuestas de satisfacción por su
 
 - **Panel** (`/admin`): restaurantes, encuestas, tablets, usuarios y resultados.
 - **Encuesta pública** (`/r/<restaurante>`): la que abre el QR, sin login.
+- **Página de inicio** (`/`): presenta el producto y recibe solicitudes de demo.
+- **Administración** (`/plataforma`): para el equipo que opera Sobremesa. Clientes (cadenas), solicitudes de demo, pagos mensuales, conexiones, color de la interfaz y administradores. No existe en la versión instalada en PC.
 - **Modo tablet** (`/kiosk`): app instalable que se vincula con un código de 6 dígitos, se reinicia sola entre comensales y guarda respuestas sin internet.
 
 La guía de despliegue está en [`docs/DEPLOY.md`](docs/DEPLOY.md), la versión instalable en una PC con Windows en [`docs/INSTALAR-PC.md`](docs/INSTALAR-PC.md), el manual para el cliente en [`docs/MANUAL.md`](docs/MANUAL.md) y el backlog original en [`docs/backlog.md`](docs/backlog.md).
@@ -54,21 +56,22 @@ Con el seed quedan estas cuentas y datos:
 
 ## Comandos
 
-| Comando                                                | Qué hace                                                                                |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `npm run dev`                                          | Servidor de desarrollo                                                                  |
-| `npm run build` / `npm start`                          | Build y servidor de producción                                                          |
-| `npm run vercel-build`                                 | Migraciones + build (lo usa Vercel)                                                     |
-| `npm run lint` / `npm run typecheck`                   | ESLint / TypeScript                                                                     |
-| `npm test`                                             | Pruebas unitarias e integración (usa `TEST_DATABASE_URL`, por defecto `encuestas_test`) |
-| `npm run test:e2e`                                     | Playwright; levanta su propio servidor contra `encuestas_e2e`                           |
-| `npm run db:generate`                                  | Genera una migración nueva tras cambiar `src/db/schema.ts`                              |
-| `npm run db:migrate`                                   | Aplica migraciones pendientes                                                           |
-| `npm run db:studio`                                    | Explorador visual de la BD                                                              |
-| `npm run create-admin -- correo "Nombre" "Contraseña"` | Crea o restablece un administrador                                                      |
-| `npm run invite:org`                                   | Imprime un enlace de un solo uso para dar de alta una cadena nueva con su administrador |
-| `npm run invite:admin -- "Cadena"`                     | Imprime un enlace de un solo uso para un administrador más en una cadena que ya existe  |
-| `npm run org:delete -- "Cadena"`                       | Borra una cadena de prueba con todo lo suyo (pide confirmación; nunca borra "Demo")     |
+| Comando                                                  | Qué hace                                                                                |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `npm run dev`                                            | Servidor de desarrollo                                                                  |
+| `npm run build` / `npm start`                            | Build y servidor de producción                                                          |
+| `npm run release`                                        | Migraciones + administrador de la plataforma (pre-deploy de Railway)                    |
+| `npm run platform-admin -- correo "Nombre" "Contraseña"` | Crea o restablece un administrador de la plataforma                                     |
+| `npm run lint` / `npm run typecheck`                     | ESLint / TypeScript                                                                     |
+| `npm test`                                               | Pruebas unitarias e integración (usa `TEST_DATABASE_URL`, por defecto `encuestas_test`) |
+| `npm run test:e2e`                                       | Playwright; levanta su propio servidor contra `encuestas_e2e`                           |
+| `npm run db:generate`                                    | Genera una migración nueva tras cambiar `src/db/schema.ts`                              |
+| `npm run db:migrate`                                     | Aplica migraciones pendientes                                                           |
+| `npm run db:studio`                                      | Explorador visual de la BD                                                              |
+| `npm run create-admin -- correo "Nombre" "Contraseña"`   | Crea o restablece un administrador                                                      |
+| `npm run invite:org`                                     | Imprime un enlace de un solo uso para dar de alta una cadena nueva con su administrador |
+| `npm run invite:admin -- "Cadena"`                       | Imprime un enlace de un solo uso para un administrador más en una cadena que ya existe  |
+| `npm run org:delete -- "Cadena"`                         | Borra una cadena de prueba con todo lo suyo (pide confirmación; nunca borra "Demo")     |
 
 Para las pruebas locales crea una vez las bases: `createdb encuestas_test && createdb encuestas_e2e`.
 

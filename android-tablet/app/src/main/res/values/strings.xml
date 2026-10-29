@@ -13,10 +13,11 @@
     <string name="setup_error_invalid">La dirección no es válida. Revisa que esté bien escrita.</string>
     <string name="setup_error_unreachable">No se pudo conectar con %1$s. Revisa la dirección y que la tablet tenga red.</string>
     <string name="setup_error_not_server">%1$s respondió, pero no es un servidor de encuestas.</string>
-    <string name="setup_pending_warning">Hay %1$d respuestas sin enviar al servidor actual. Si cambias de servidor se quedan guardadas en la tablet, pero solo se envían al volver a esta dirección.</string>
+    <string name="setup_pending_warning">Hay %1$d respuestas sin enviar al servidor actual. Si escribes la nueva IP del mismo servidor, la tablet las pasa y sigue vinculada. Si es otro servidor, se quedan guardadas en la tablet y solo se envían al volver a esta dirección.</string>
 
     <string name="offline_title">Sin conexión, reintentando</string>
-    <string name="offline_detail">No se pudo abrir %1$s. Se reintenta cada 10 segundos.</string>
+    <string name="offline_detail">No se pudo abrir %1$s. Se reintenta cada 10 segundos y, si la PC cambió de IP, la tablet la busca sola en la red.</string>
+    <string name="offline_moving">El servidor cambió de dirección. Reconectando con %1$s…</string>
     <string name="offline_hint">Para cambiar la dirección, mantén presionadas 5 segundos las dos esquinas de arriba.</string>
 
     <string name="pin_title">PIN de la tablet</string>

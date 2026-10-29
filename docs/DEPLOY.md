@@ -1,4 +1,43 @@
-# Guía de despliegue (E9)
+# Guía de despliegue
+
+**Producción: Railway** (app + PostgreSQL en el mismo proyecto). La configuración vive en [`railway.json`](../railway.json):
+
+| Paso        | Qué corre                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| Build       | `npm run build` (Railpack detecta Node 22 por `.node-version`)                                     |
+| Pre-deploy  | `npm run release`: aplica migraciones pendientes y crea el administrador de la plataforma si falta |
+| Arranque    | `npm start` (`next start` escucha en `$PORT`)                                                      |
+| Healthcheck | `/api/health` (no toca la base)                                                                    |
+
+## Railway paso a paso
+
+1. **New Project → Deploy from GitHub repo →** `encuestas-restaurantes` (rama `main`).
+2. En el mismo proyecto: **+ New → Database → PostgreSQL**.
+3. En el servicio de la app, **Variables**:
+
+   | Variable                               | Valor                                                                   |
+   | -------------------------------------- | ----------------------------------------------------------------------- |
+   | `DATABASE_URL`                         | `${{Postgres.DATABASE_URL}}` (referencia a la base, red privada)        |
+   | `DATABASE_POOL_MAX`                    | `5`                                                                     |
+   | `AUTH_SECRET`                          | 32+ caracteres aleatorios (`openssl rand -base64 32`)                   |
+   | `APP_URL`                              | `https://<dominio público>` sin diagonal final (los QR llevan esta URL) |
+   | `APP_TIMEZONE`                         | `America/Mexico_City`                                                   |
+   | `PLATFORM_ADMIN_EMAIL`                 | correo del primer administrador de la plataforma                        |
+   | `PLATFORM_ADMIN_NAME`                  | su nombre                                                               |
+   | `PLATFORM_ADMIN_PASSWORD`              | contraseña inicial (8+). Solo se usa si la cuenta no existe             |
+   | `RESEND_API_KEY`, `EMAIL_FROM`         | opcional: correos (recuperar contraseña, alertas, solicitudes de demo)  |
+   | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | opcional                                                                |
+
+4. **Settings → Networking → Generate Domain** (o un dominio propio con su CNAME). Pon ese dominio en `APP_URL` y vuelve a desplegar.
+5. Abre `https://<dominio>/login` con `PLATFORM_ADMIN_EMAIL`: entras a la **Administración** (`/plataforma`). Desde ahí das de alta clientes (enlace de un solo uso), ves solicitudes de demo, pagos, conexiones, el color de la interfaz y agregas a más administradores.
+
+Cada push a `main` vuelve a desplegar; las migraciones nuevas se aplican solas en el pre-deploy.
+
+> **Mudanza desde Vercel/Neon:** si quieres conservar los datos, `pg_dump --no-owner --no-acl "<url directa vieja>" | psql "<DATABASE_PUBLIC_URL de Railway>"` antes del primer despliegue. Si la base vieja ya no existe, arranca vacía: la migración crea la cadena "Demo".
+
+---
+
+## Referencia anterior (Vercel + Supabase/Neon)
 
 Todo esto es configuración externa; el código ya está listo. **Todas las cuentas deben quedar a nombre del cliente.**
 

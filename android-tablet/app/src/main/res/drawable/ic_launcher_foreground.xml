@@ -4,14 +4,17 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Globo de comentario con una palomita. -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M38,34h32a8,8 0,0 1,8 8v20a8,8 0,0 1,-8 8H56l-10,9v-9h-8a8,8 0,0 1,-8 -8V42a8,8 0,0 1,8 -8z" />
-    <path
-        android:pathData="M44,52l7,7 13,-14"
-        android:strokeColor="#2F6B4F"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="5" />
+    <!-- Logo de Sobremesa: globo de conversación con una estrella (el mismo trazo que la web). -->
+    <group
+        android:scaleX="1.6"
+        android:scaleY="1.6"
+        android:translateX="28.4"
+        android:translateY="28.4">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M6,8.5A4.5,4.5 0,0 1,10.5 4h11A4.5,4.5 0,0 1,26 8.5v8a4.5,4.5 0,0 1,-4.5 4.5H14l-5.2,4.3c-0.7,0.6 -1.8,0.1 -1.8,-0.8V21A4.5,4.5 0,0 1,6 16.5v-8z" />
+        <path
+            android:fillColor="@color/mustard"
+            android:pathData="M16,7.6l1.55,3.14 3.47,0.5 -2.51,2.45 0.6,3.45L16,15.5l-3.1,1.64 0.59,-3.45 -2.5,-2.45 3.46,-0.5L16,7.6z" />
+    </group>
 </vector>

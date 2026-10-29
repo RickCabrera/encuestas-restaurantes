@@ -36,7 +36,7 @@ async function main() {
 
   console.log("Limpiando tablas…");
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, restaurants, users, organizations CASCADE`,
+    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, restaurants, users, organizations CASCADE`,
   );
 
   // Todo lo del seed vive en la cadena "Demo".

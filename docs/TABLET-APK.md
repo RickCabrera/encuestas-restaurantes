@@ -5,6 +5,7 @@ La app de `android-tablet/` abre el modo tablet (`<servidor>/kiosk`) a pantalla 
 - Pantalla siempre encendida, sin barras del sistema y con el botón atrás deshabilitado.
 - Recuerda el servidor, la vinculación y las respuestas pendientes entre reinicios.
 - Si no logra abrir el servidor muestra "Sin conexión, reintentando" y prueba de nuevo cada 10 segundos.
+- Si el servidor es una PC de la red local y el router le cambia la IP, la app la vuelve a encontrar sola (ver [Si la PC cambia de IP](#si-la-pc-cambia-de-ip)).
 - Funciona con `https://` y también con `http://` en la red local (la versión instalada en una PC: [INSTALAR-PC.md](INSTALAR-PC.md)).
 
 Requiere Android 7 o posterior. El código de la app web no cambia: la tablet se vincula igual que en el navegador (ver [MANUAL.md](MANUAL.md#tablets-del-restaurante)).
@@ -59,9 +60,9 @@ Para descargarlo: **Actions → APK tablet →** la ejecución más reciente **�
 
 Si faltan los secrets de firma, el workflow falla y dice cuáles faltan; nunca publica un APK sin firmar.
 
-Cada APK lleva dos números, visibles en la pantalla del servidor y en el menú de la app como `Versión 1.0.0 (37)`:
+Cada APK lleva dos números, visibles en la pantalla del servidor y en el menú de la app como `Versión 1.1.0 (37)`:
 
-- **Nombre de versión** (`1.0.0`): viene del tag, o es `1.0.0` si se compiló sin tag.
+- **Nombre de versión** (`1.1.0`): viene del tag, o es `1.1.0` si se compiló sin tag.
 - **Número de compilación** (`37`): el número de ejecución del workflow. Siempre crece, así que un APK más nuevo se instala encima del anterior.
 
 ### Compilar en tu computadora
@@ -89,7 +90,7 @@ La segunda hace los dos gestos (menú del personal y menú de la app) con la pan
 
 1. Copia el `.apk` a la tablet (USB, correo o una liga de descarga) y ábrelo. Android pedirá permitir la instalación desde esa fuente: acéptalo.
 
-   Con cable y `adb`: `adb install sobremesa-tablet-1.0.0-37.apk`
+   Con cable y `adb`: `adb install sobremesa-tablet-1.1.0-37.apk`
 
 2. Abre **Sobremesa Tablet**. La primera vez pide la **Dirección del servidor**:
    - En internet: `https://encuestas.sitirt.mx`
@@ -112,7 +113,7 @@ Instala el APK nuevo encima del anterior. Se conservan el servidor, la vinculaci
 - **Menú del personal** (el de siempre): esquina superior izquierda, 3 segundos, con el PIN del restaurante. Actualiza la encuesta, envía pendientes o desvincula la tablet.
 - **Menú de la app**: mantén presionadas **las dos esquinas superiores a la vez durante 5 segundos** y escribe el PIN del restaurante. Muestra el servidor, la versión y el **Estado del bloqueo** (si la tablet tiene el bloqueo total y si la pantalla está fijada), y permite:
   - **Recargar la encuesta**.
-  - **Cambiar servidor**: abre la pantalla de dirección con la actual escrita. Si hay respuestas sin enviar, avisa: se quedan guardadas en la tablet, pero solo se envían al volver a la dirección anterior. En el servidor nuevo la tablet empieza sin vincular y pide código.
+  - **Cambiar servidor**: abre la pantalla de dirección con la actual escrita. Si escribes la nueva IP del **mismo** servidor, la tablet sigue vinculada y pasa sus respuestas pendientes. Si es **otro** servidor, avisa de las respuestas sin enviar (se quedan guardadas en la tablet, pero solo se envían al volver a la dirección anterior) y la tablet empieza sin vincular y pide código.
   - **Desvincular esta tablet**: para pasarla a otro restaurante o a otra cadena del mismo servidor (ver [Pasar la tablet a otro restaurante](#pasar-la-tablet-a-otro-restaurante-o-cadena)).
   - **Bloquear tablet** / **Desbloquear tablet**: fija la app en pantalla o la suelta. Es un bloqueo básico, para demos (ver [sección 5](#fijar-pantalla-bloquear-tablet)).
   - **Quitar el bloqueo total**: solo aparece si la tablet es device owner.
@@ -126,6 +127,15 @@ Instala el APK nuevo encima del anterior. Se conservan el servidor, la vinculaci
 - **Sin conexión.** Con la encuesta ya abierta, la tablet sigue recibiendo respuestas sin internet y las envía cuando vuelve (igual que en el navegador). La pantalla "Sin conexión, reintentando" solo aparece cuando la app no logra abrir el servidor, por ejemplo al encenderla sin red. Desde esa pantalla también funciona el gesto de las dos esquinas, por si la dirección cambió.
 
   Con un servidor `http://` en red local la tablet no puede arrancar sin red (el navegador solo guarda la página para uso sin conexión cuando la dirección es `https://`). Una vez abierta, sí sigue funcionando si la red se cae.
+
+### Si la PC cambia de IP
+
+Solo para la versión instalada en una PC ([INSTALAR-PC.md](INSTALAR-PC.md)), con la app 1.1 o posterior:
+
+- La app recuerda el **identificador de instalación** del servidor (lo publica `/api/health`). Lo guarda al configurar la dirección o, en tablets configuradas con una app anterior, la primera vez que el servidor responde después de actualizar.
+- Cada minuto comprueba que el servidor siga en su dirección. Si dos veces seguidas no responde, o si la página no abre, busca en la misma red (la /24 de la dirección anterior y la de la tablet, mismo puerto) un servidor con ese identificador. Nunca se conecta a otro servidor de encuestas que esté en la red.
+- Al encontrarlo, espera a que nadie esté usando la tablet (45 segundos sin toques) y se cambia: pasa a la dirección nueva el token de la tablet, su configuración y las respuestas sin enviar. **No hay que volver a vincular.**
+- Si la PC quedó en otra red (otra /24) o en otro puerto, no la encuentra: usa **Cambiar servidor** y escribe la dirección nueva. Si es el mismo servidor, la tablet sigue vinculada igual.
 
 ### Pasar la tablet a otro restaurante o cadena
 
@@ -223,7 +233,7 @@ Necesitas una computadora con `adb` (viene en las [platform-tools de Android](ht
 5. Instala la app y regístrala como device owner. El comando es exactamente este:
 
    ```bash
-   adb install sobremesa-tablet-1.0.0-37.apk
+   adb install sobremesa-tablet-1.1.0-37.apk
    adb shell dpm set-device-owner mx.sitirt.encuestas.tablet/.AdminReceiver
    ```
 
@@ -250,7 +260,7 @@ Si nadie recuerda el PIN del restaurante, cámbialo en el panel (la tablet lo to
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | "No se pudo conectar con…" al guardar la dirección     | Que la tablet tenga Wi-Fi, que la dirección esté bien escrita y, en red local, que incluya el puerto (`:3000`) y que la tablet esté en la misma red que el servidor.                                                                                                                                                         |
 | "…respondió, pero no es un servidor de encuestas"      | La dirección apunta a otro sitio o a otro puerto. Abre `<dirección>/api/health` en un navegador: debe mostrar `{"status":"ok",…}`.                                                                                                                                                                                           |
-| "Sin conexión, reintentando" que no se quita           | El servidor está apagado o cambió de dirección. Mantén las dos esquinas 5 segundos para cambiarla.                                                                                                                                                                                                                           |
+| "Sin conexión, reintentando" que no se quita           | El servidor está apagado, o cambió de dirección y la app no lo encontró en la red (otra red o puerto). Mantén las dos esquinas 5 segundos para cambiarla.                                                                                                                                                                    |
 | Se abre el menú del personal en vez del menú de la app | Los dos dedos no tocaron a la vez. Cierra el menú e inténtalo de nuevo.                                                                                                                                                                                                                                                      |
 | Nadie recuerda el PIN y hay que cambiar el servidor    | Cambia el PIN del restaurante en el panel; la tablet lo toma la siguiente vez que se conecte al servidor actual. Si ese servidor ya no existe, borra los datos de la app (**Ajustes → Apps → Sobremesa Tablet → Almacenamiento → Borrar datos**) y configúrala de nuevo. Se pierden las respuestas que no se habían enviado. |
 | "App no instalada" al actualizar                       | El APK está firmado con otra llave (por ejemplo, una compilación de prueba). Usa el APK del workflow.                                                                                                                                                                                                                        |

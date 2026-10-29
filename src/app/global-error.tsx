@@ -10,11 +10,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error]);
   return (
     <html lang="es-MX">
-      <body style={{ fontFamily: "system-ui, sans-serif", background: "#f3f5f2", color: "#1c2621" }}>
+      <body style={{ fontFamily: "system-ui, sans-serif", background: "#f6f4ef", color: "#17181c" }}>
         <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24 }}>
           <div>
             <h1 style={{ fontSize: 32, margin: 0 }}>Algo salió mal</h1>
-            <p style={{ color: "#56625b" }}>Recarga la página. Si sigue pasando, avisa al administrador.</p>
+            <p style={{ color: "#5b5e66" }}>Recarga la página. Si sigue pasando, avisa al administrador.</p>
             <button
               onClick={reset}
               style={{
@@ -22,7 +22,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
                 padding: "10px 20px",
                 borderRadius: 8,
                 border: 0,
-                background: "#2f6b4f",
+                background: "#0e8a6e",
                 color: "#fff",
                 fontSize: 16,
               }}

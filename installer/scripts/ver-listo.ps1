@@ -7,9 +7,13 @@ Request-Elevation $PSCommandPath -Hidden
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-if (-not (Test-Path $ListoHtml)) {
-  try { Update-ListoPage } catch { }
-}
+# Se vuelve a escribir cada vez que se abre: la IP de la PC pudo cambiar desde la instalación,
+# y una página vieja diría que todo sigue igual. Se conserva el enlace de alta que mostraba.
+$previousInvite = ''
+try {
+  if (Test-Path $ListoJson) { $previousInvite = [string]([System.IO.File]::ReadAllText($ListoJson) | ConvertFrom-Json).inviteLink }
+} catch { $previousInvite = '' }
+try { Update-ListoPage $previousInvite } catch { }
 if (-not (Test-Path $ListoHtml)) {
   [System.Windows.Forms.MessageBox]::Show("Todavía no existe la página de instalación. Revisa $LogDir\instalacion.log", $AppName) | Out-Null
   exit 1
@@ -71,6 +75,14 @@ function Add-Button([string]$Text, [scriptblock]$OnClick) {
 if ($data -and $data.inviteLink) { Add-MainButton 'Crear mi cadena' } else { Add-MainButton 'Abrir Sobremesa Encuestas' }
 if ($data -and $data.tabletUrl) {
   Add-Button 'Copiar dirección de las tablets' { [System.Windows.Forms.Clipboard]::SetText($data.tabletUrl) }
+}
+# Si la IP cambió, el botón para guardarla está aquí mismo (además del menú Inicio).
+$actualizarIp = Join-Path $PSScriptRoot 'actualizar-ip.ps1'
+if ($data -and $data.ipChanged) {
+  Add-Button 'Actualizar la IP' {
+    $form.Close()
+    Start-Process -FilePath $PowerShellExe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$actualizarIp`"")
+  }
 }
 Add-Button 'Cerrar' { $form.Close() }
 

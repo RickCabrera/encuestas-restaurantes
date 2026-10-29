@@ -46,6 +46,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.net.Inet4Address
+import java.util.concurrent.Executors
 import org.json.JSONObject
 import org.json.JSONTokener
 
@@ -78,6 +80,22 @@ class MainActivity : Activity() {
     private var menuQueued = false
     private val noticePoll = Runnable { checkNotice() }
 
+    // ── El servidor cambió de IP (versión instalada en PC) ──
+    // Revisa cada tanto que el servidor siga en su dirección; si no, lo busca en la red (ServerFinder).
+    private val background = Executors.newSingleThreadExecutor()
+    private val watchdog = Runnable { watchServer() }
+    private var resumed = false
+    private var failedChecks = 0
+    private var finding = false
+    private var lastFindAt = 0L
+    private var lastTouchAt = 0L
+    // Se está pasando la vinculación a la dirección nueva: la página no se toca mientras tanto.
+    private var migrating = false
+    private var migrationFailures = 0
+    // Dirección nueva encontrada, esperando a que nadie esté usando la tablet para cambiarse.
+    private var relocateTo: String? = null
+    private val relocateWhenIdle = Runnable { tryRelocate() }
+
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             handler.post {
@@ -98,7 +116,10 @@ class MainActivity : Activity() {
         offlineDetail = findViewById(R.id.offline_detail)
 
         root.onTrigger = ::onCornerHold
-        root.onTouch = ::onAnyTouch
+        root.onTouch = { ev ->
+            lastTouchAt = SystemClock.uptimeMillis()
+            onAnyTouch(ev)
+        }
         // Con el aviso de Android abierto, tampoco el menú del personal de la web debe abrirse debajo.
         root.blockChildren = ::noticeOpen
         keepContentAboveKeyboard()
@@ -121,12 +142,17 @@ class MainActivity : Activity() {
         }
         applyLockTask()
         requestScreenPin()
+        resumed = true
+        handler.removeCallbacks(watchdog)
+        handler.postDelayed(watchdog, FIRST_WATCH_MS)
         if (server != loadedServer) loadKiosk()
         // Al volver a primer plano: que la página confirme con el servidor que sigue vinculada.
         else if (pageReady) web.evaluateJavascript(CHECK_PAIRING, null)
     }
 
     override fun onPause() {
+        resumed = false
+        handler.removeCallbacks(watchdog)
         capturePin()
         web.onPause()
         // Sin esto las cookies recientes pueden perderse si Android mata la app.
@@ -142,6 +168,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        background.shutdownNow()
         dialog?.dismiss()
         web.destroy()
         super.onDestroy()
@@ -181,7 +208,7 @@ class MainActivity : Activity() {
                 !isServerUrl(request.url)
 
             override fun onPageFinished(view: WebView, url: String) {
-                if (loadFailed) return
+                if (loadFailed || migrating || url == BLANK_URL) return
                 pageReady = true
                 offline.visibility = View.GONE
                 web.visibility = View.VISIBLE
@@ -189,11 +216,11 @@ class MainActivity : Activity() {
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-                if (request.isForMainFrame) showOffline()
+                if (request.isForMainFrame && !migrating) showOffline()
             }
 
             override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
-                if (request.isForMainFrame && response.statusCode >= 500) showOffline()
+                if (request.isForMainFrame && response.statusCode >= 500 && !migrating) showOffline()
             }
 
             override fun onReceivedSslError(view: WebView, sslHandler: SslErrorHandler, error: SslError) {
@@ -216,6 +243,10 @@ class MainActivity : Activity() {
 
     private fun loadKiosk() {
         val server = ServerConfig.server(this) ?: return
+        if (migrating) return
+        // El mismo servidor está en otra dirección: primero se pasa lo que la página guardó en la anterior.
+        val from = ServerConfig.migrateFrom(this)
+        if (from != null && from != server) return migrateTo(from, server)
         if (loadedServer != null && loadedServer != server) pendingResponses = 0
         loadedServer = server
         loadFailed = false
@@ -235,7 +266,119 @@ class MainActivity : Activity() {
         offline.visibility = View.VISIBLE
         handler.removeCallbacks(retry)
         handler.postDelayed(retry, RETRY_MS)
+        // ¿La PC cambió de IP? Se busca el servidor en la red sin esperar al siguiente chequeo.
+        findServer()
     }
+
+    // ───────── El servidor cambió de IP ─────────
+
+    /** Lo que se puede buscar en la red: un servidor en IP local del que se conoce el identificador. */
+    private fun canSearch(server: String) = ServerFinder.searchable(server) && ServerConfig.instance(this) != null
+
+    /**
+     * Cada [WATCH_MS]: confirma que el servidor sigue en su dirección y es el mismo. Si dos veces
+     * seguidas no responde (o responde otro servidor), lo busca. De paso guarda el identificador
+     * del servidor la primera vez que lo ve (tablets configuradas antes de esta versión).
+     */
+    private fun watchServer() {
+        handler.removeCallbacks(watchdog)
+        if (!resumed) return
+        handler.postDelayed(watchdog, WATCH_MS)
+        val server = ServerConfig.server(this) ?: return
+        if (finding || migrating || !ServerFinder.searchable(server)) return
+        background.execute {
+            val health = HealthCheck.probe(server, WATCH_TIMEOUT_MS)
+            handler.post {
+                if (ServerConfig.server(this) != server) return@post
+                val known = ServerConfig.instance(this)
+                val same = health.result == HealthCheck.Result.OK &&
+                    (known == null || health.instance == null || health.instance == known)
+                if (same) {
+                    failedChecks = 0
+                    if (known == null && health.instance != null) ServerConfig.setInstance(this, health.instance)
+                } else if (++failedChecks >= FAILED_CHECKS_TO_SEARCH) {
+                    findServer(force = true)
+                }
+            }
+        }
+    }
+
+    private fun findServer(force: Boolean = false) {
+        val server = ServerConfig.server(this) ?: return
+        val instance = ServerConfig.instance(this) ?: return
+        if (finding || migrating || relocateTo != null || !canSearch(server)) return
+        if (!force && SystemClock.uptimeMillis() - lastFindAt < FIND_COOLDOWN_MS) return
+        finding = true
+        val own = ownAddresses()
+        Thread {
+            val found = ServerFinder.find(server, instance, own)
+            handler.post {
+                finding = false
+                lastFindAt = SystemClock.uptimeMillis()
+                if (found == null || isDestroyed || ServerConfig.server(this) != server) return@post
+                failedChecks = 0
+                relocateTo = found
+                tryRelocate()
+            }
+        }.start()
+    }
+
+    /**
+     * Se cambia a la dirección nueva cuando nadie está usando la tablet (para no cortarle la
+     * encuesta a un comensal). Si la página ni siquiera abrió, de inmediato.
+     */
+    private fun tryRelocate() {
+        handler.removeCallbacks(relocateWhenIdle)
+        val target = relocateTo ?: return
+        if (isDestroyed) return
+        val busy = pageReady && (
+            dialog?.isShowing == true || SystemClock.uptimeMillis() - lastTouchAt < IDLE_BEFORE_MOVE_MS
+            )
+        if (busy) {
+            handler.postDelayed(relocateWhenIdle, IDLE_CHECK_MS)
+            return
+        }
+        relocateTo = null
+        ServerConfig.relocate(this, target)
+        handler.removeCallbacks(retry)
+        loadKiosk()
+    }
+
+    /** Pasa la vinculación y las respuestas pendientes de [from] a [to] y luego abre [to]. */
+    private fun migrateTo(from: String, to: String) {
+        migrating = true
+        pageReady = false
+        handler.removeCallbacks(retry)
+        // Que la página de la dirección anterior no escriba nada mientras se copia.
+        web.stopLoading()
+        web.loadUrl(BLANK_URL)
+        web.visibility = View.INVISIBLE
+        offline.visibility = View.VISIBLE
+        offlineDetail.text = getString(R.string.offline_moving, to)
+        StorageMigrator.migrate(this, root, from, to) { ok ->
+            migrating = false
+            if (isDestroyed) return@migrate
+            if (ok || ++migrationFailures >= MAX_MIGRATION_FAILURES) {
+                // Tras varios intentos se abre la nueva igual: a lo más habrá que vincular otra vez.
+                migrationFailures = 0
+                ServerConfig.clearMigrateFrom(this)
+                loadKiosk()
+            } else {
+                handler.postDelayed(retry, MIGRATION_RETRY_MS)
+            }
+        }
+    }
+
+    /** IPs IPv4 de la tablet en la red actual, para saber qué red revisar. */
+    private fun ownAddresses(): List<String> =
+        try {
+            val cm = getSystemService(ConnectivityManager::class.java)
+            cm.getLinkProperties(cm.activeNetwork)?.linkAddresses
+                ?.mapNotNull { (it.address as? Inet4Address)?.hostAddress }
+                ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
 
     /**
      * Copia a la app el PIN del restaurante vinculado (su hash) para poder pedirlo aunque el
@@ -701,6 +844,17 @@ class MainActivity : Activity() {
         // Lo más que se da por abierto el aviso de Android para fijar la pantalla.
         const val NOTICE_MAX_MS = 30_000L
         const val NOTICE_POLL_MS = 300L
+        // Servidor que cambia de IP.
+        const val FIRST_WATCH_MS = 15_000L
+        const val WATCH_MS = 60_000L
+        const val WATCH_TIMEOUT_MS = 5000
+        const val FAILED_CHECKS_TO_SEARCH = 2
+        const val FIND_COOLDOWN_MS = 30_000L
+        const val IDLE_BEFORE_MOVE_MS = 45_000L
+        const val IDLE_CHECK_MS = 5000L
+        const val MAX_MIGRATION_FAILURES = 3
+        const val MIGRATION_RETRY_MS = 3000L
+        const val BLANK_URL = "about:blank"
 
         /** Funciones que la página del kiosko le deja a la app (src/components/kiosk/kiosk-app.tsx). */
         const val CHECK_PAIRING = "window.sobremesaKiosk && window.sobremesaKiosk.check()"
