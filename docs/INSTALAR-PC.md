@@ -276,6 +276,18 @@ Seguridad:
 - La versión instalable se compila con `APP_MODE=local`. Lo que cambia respecto a la nube está en `src/lib/app-mode.ts` y `next.config.ts`: cookie de sesión sin `secure`, sin HSTS, sin pausa nocturna de las tablets y salida `standalone`. Solo en ese modo existen la ruta `/inicio` y el recuadro "Dirección para las tablets" de la sección Tablets. El servicio arranca la app con `local-server.cjs`, que pone en `x-forwarded-for` la IP real de cada conexión.
 - No cambies el `AppId` de `installer/setup.iss` ni los nombres de los servicios: son lo que permite actualizar encima.
 
+## Modos: Nube, Solo en su PC y PC sincronizada
+
+Cada cliente tiene un modo que se elige en la Administración (ficha del cliente → "Sobremesa en su PC"). El cambio llega a la PC en unos minutos o la siguiente vez que alguien entra.
+
+| Modo                         | Qué hace el .exe                                                                         | Datos                                                                                                    | Sin internet                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Nube** (base, recomendado) | Al entrar con la cuenta, abre la web (entrada de un solo uso) y se queda ahí             | Una sola base: la de la nube. Mismo panel en la PC y en la web. Las tablets usan la dirección de la nube | El panel no abre (las tablets siguen guardando respuestas y las mandan al volver) |
+| **Solo en su PC**            | Usa la base de la PC                                                                     | Solo en la PC. En la web no se ve nada (sale un aviso)                                                   | Funciona hasta 7 días                                                             |
+| **PC sincronizada**          | Usa la base de la PC y se sincroniza con la nube cada minuto (y con "Sincronizar ahora") | En los dos lados: lo que se cambia en la PC o en la web aparece en el otro                               | Funciona hasta 7 días; al volver el internet, se pone al día                      |
+
+**Sincronización**: viajan restaurantes, usuarios (con su contraseña), asignaciones de gerentes, encuestas, preguntas, tablets, respuestas y borrados. Si el mismo dato se edita en los dos lados, gana el cambio más reciente. La nube solo acepta datos de la cadena de esa PC y nunca deja que una PC toque cuentas de la Administración. Si algo choca (p. ej. un slug que ya usa otro cliente) se salta y la barra de sincronización lo avisa. Para pasar de "Solo en su PC" a "Nube" sin perder datos: primero "PC sincronizada", "Sincronizar ahora" en la PC, y después "Nube".
+
 ## Licencia de la PC
 
 La versión instalada no funciona sola: **se entra con las cuentas de la nube** (las de los clientes que se dan de alta en la Administración, `/plataforma`). Así nadie puede usar Sobremesa con solo copiar el instalador, y cada negocio ve solo lo suyo.

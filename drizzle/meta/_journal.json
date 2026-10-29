@@ -57,6 +57,13 @@
       "when": 1793299414602,
       "tag": "0007_org_licenses",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793304284096,
+      "tag": "0008_pc_modes_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -61,6 +61,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                     </span>
                   </p>
                 </div>
+                <Badge>{c.pcMode === "CLOUD" ? "Nube" : c.pcMode === "LOCAL" ? "Solo PC" : "PC sincronizada"}</Badge>
                 {c.pcs > 0 ? (
                   <Badge tone="amber">
                     {c.pcs === 1 ? "1 PC" : `${c.pcs} PCs`} · {c.pcRestaurants} rest. · {c.pcResponses30} resp.

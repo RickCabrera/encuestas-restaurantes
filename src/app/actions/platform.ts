@@ -158,6 +158,16 @@ export async function revokeInstallationAction(installationId: string) {
   }
 }
 
+/** Cómo usa la PC este cliente: Nube (base), solo en su PC, o PC sincronizada con la nube. */
+export async function setPcModeAction(orgId: string, mode: "CLOUD" | "LOCAL" | "SYNC") {
+  const me = await requirePlatformAdmin();
+  const org = await clientOrg(orgId);
+  if (!org || !["CLOUD", "LOCAL", "SYNC"].includes(mode)) return;
+  await db.update(organizations).set({ pcMode: mode }).where(eq(organizations.id, org.id));
+  logger.info("platform.pc_mode_changed", { by: me.id, organizationId: org.id, mode });
+  revalidateClients(org.id);
+}
+
 /** Reactivar una PC dada de baja: en su siguiente revisión vuelve a funcionar. */
 export async function restoreInstallationAction(installationId: string) {
   const me = await requirePlatformAdmin();

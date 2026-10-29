@@ -65,6 +65,11 @@ async function loginActionInner(_prev: ActionState, formData: FormData): Promise
   if (isLocalMode()) {
     // En la PC se entra con la cuenta de la nube (ver src/lib/license-local.ts).
     const local = await localLogin(email, password);
+    if (local.ok === "redirect") {
+      // Modo Nube: la nube ya validó la cuenta; se abre la web con una entrada de un solo uso.
+      logger.info("auth.login_cloud_redirect", { email });
+      redirect(local.url);
+    }
     if (!local.ok) {
       logger.warn("auth.login_failed", { email, ip, local: true });
       return { error: local.error, values };

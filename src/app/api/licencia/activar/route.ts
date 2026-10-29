@@ -5,7 +5,7 @@ import { licenseSigningConfigured } from "@/lib/license-token";
 import { activateInstallation } from "@/lib/licensing-server";
 import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
-import { ipFromRequest } from "@/lib/request";
+import { appUrl, ipFromRequest } from "@/lib/request";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +38,14 @@ export async function POST(req: Request) {
   if (!limited.ok) return NextResponse.json({ error: "rate_limited", retryAfterSec: limited.retryAfterSec }, { status: 429 });
   const parsed = body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
-  const result = await activateInstallation(parsed.data);
+  const result = await activateInstallation({ ...parsed.data, baseUrl: await appUrl() });
   if (!result.ok) {
     logger.warn("license.activate_rejected", { ip, reason: result.reason });
     return NextResponse.json({ error: result.reason }, { status: result.reason === "credentials" ? 401 : 403 });
   }
-  logger.info("license.activated", { installationId: result.installationId });
+  logger.info("license.activated", {
+    mode: result.mode,
+    ...("installationId" in result ? { installationId: result.installationId } : {}),
+  });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }

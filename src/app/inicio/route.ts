@@ -1,5 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
+import { db } from "@/db";
 import { isLocalMode } from "@/lib/app-mode";
+import { licenseServerUrl } from "@/lib/license-local";
+import { getSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +32,9 @@ export async function GET(request: Request) {
   if (!LOOPBACK.has(request.headers.get("x-forwarded-for") ?? "")) return notFound();
   if (!sameKey(new URL(request.url).searchParams.get("llave"), process.env.LOCAL_SETUP_KEY)) return notFound();
 
-  // Las cadenas vienen de la nube: siempre se entra con la cuenta del negocio (ver src/lib/license-local.ts).
-  return goTo("/login");
+  // Las cadenas vienen de la nube: se entra con la cuenta del negocio (ver src/lib/license-local.ts).
+  // Si en esta PC todos los negocios usan el modo Nube, se va directo a la web (ahí sigue su sesión).
+  const licenses = await db.query.orgLicenses.findMany({ columns: { mode: true } });
+  const cloudOnly = (await getSetting("cloud_home")) === "1" && licenses.every((l) => l.mode === "CLOUD");
+  return goTo(cloudOnly ? `${licenseServerUrl()}/admin` : "/login");
 }
