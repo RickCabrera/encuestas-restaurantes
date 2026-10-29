@@ -281,7 +281,7 @@ Seguridad:
 
 La versión instalada no funciona sola: cada PC se **activa con la cuenta de administrador del negocio en la nube** (la que se da de alta desde la Administración, `/plataforma`). Así nadie puede usar Sobremesa con solo copiar el instalador.
 
-- **Activación:** la primera vez, "Activar Sobremesa" pide el correo y la contraseña de la cuenta del negocio en la web. Si la PC todavía no tiene usuarios, crea aquí la cadena y su administrador con esa misma cuenta.
-- **Renovación:** la PC pide a la nube una licencia nueva cada 12 horas mientras se usa. La licencia firmada vale 7 días: sin internet sigue funcionando ese tiempo.
+- **Activación:** la primera vez, "Activar Sobremesa" pide el correo y la contraseña de la cuenta del negocio en la web. Esa misma cuenta (correo y contraseña de la nube) queda como administrador en la PC: si ya existía, se le pone la contraseña de la nube; si la PC ya tenía datos de otra cuenta, entra a esa cadena; si la PC estaba vacía, se crea la cadena con el nombre del cliente.
+- **Renovación:** mientras se usa (panel, tablets o QR), la PC revisa con la nube cada 5 minutos y renueva su licencia; de paso manda un resumen (cadena, restaurantes, tablets, respuestas) que se ve en la ficha del cliente. La licencia firmada vale 7 días: sin internet sigue funcionando ese tiempo.
 - **Bloqueo:** si el cliente se desactiva en la Administración, o se da de baja esa PC (ficha del cliente → Instalaciones en PC), en su siguiente revisión el panel lleva a "Activar Sobremesa", las tablets se desvinculan con un aviso y el QR deja de recibir respuestas. Al reactivar al cliente, la PC vuelve sola (o con "Volver a revisar").
 - La licencia la firma la nube con `LICENSE_PRIVATE_KEY` y la PC la verifica con la llave pública incluida en el código: no se puede fabricar desde la PC. El servidor de licencias es `https://encuestas-restaurantes-production.up.railway.app` (se puede cambiar con `LICENSE_SERVER_URL` en el `.env` de la PC).

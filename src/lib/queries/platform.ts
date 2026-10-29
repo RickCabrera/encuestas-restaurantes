@@ -18,6 +18,10 @@ export type ClientRow = {
   users: number;
   responses30: number;
   lastResponseAt: Date | null;
+  /** PCs activas (el .exe) y lo que reportan: sus datos viven en cada PC, no en la nube. */
+  pcs: number;
+  pcRestaurants: number;
+  pcResponses30: number;
 };
 
 /** Clientes (todas las cadenas menos la interna del equipo) con sus números principales. */
@@ -35,6 +39,9 @@ export async function listClients(opts: { id?: string } = {}): Promise<ClientRow
     users: number;
     responses30: number;
     last_response_at: Date | null;
+    pcs: number;
+    pc_restaurants: number;
+    pc_responses30: number;
   }>(sql`
     select o.id, o.name, o.active, o.created_at, o.billing_day, o.contact_name, o.contact_email,
       (select count(*)::int from restaurants r where r.organization_id = o.id) as restaurants,
@@ -44,7 +51,12 @@ export async function listClients(opts: { id?: string } = {}): Promise<ClientRow
       (select count(*)::int from responses x join restaurants r on r.id = x.restaurant_id
          where r.organization_id = o.id and x.submitted_at > now() - interval '30 days') as responses30,
       (select max(x.submitted_at) from responses x join restaurants r on r.id = x.restaurant_id
-         where r.organization_id = o.id) as last_response_at
+         where r.organization_id = o.id) as last_response_at,
+      (select count(*)::int from installations i where i.organization_id = o.id and i.revoked_at is null) as pcs,
+      (select coalesce(sum((i.stats->>'restaurants')::int), 0)::int from installations i
+         where i.organization_id = o.id and i.revoked_at is null) as pc_restaurants,
+      (select coalesce(sum((i.stats->>'responses30')::int), 0)::int from installations i
+         where i.organization_id = o.id and i.revoked_at is null) as pc_responses30
     from organizations o
     where o.internal = false ${opts.id ? sql`and o.id = ${opts.id}` : sql``}
     order by o.active desc, o.created_at desc
@@ -62,6 +74,9 @@ export async function listClients(opts: { id?: string } = {}): Promise<ClientRow
     users: Number(r.users),
     responses30: Number(r.responses30),
     lastResponseAt: r.last_response_at ? new Date(r.last_response_at) : null,
+    pcs: Number(r.pcs),
+    pcRestaurants: Number(r.pc_restaurants),
+    pcResponses30: Number(r.pc_responses30),
   }));
 }
 

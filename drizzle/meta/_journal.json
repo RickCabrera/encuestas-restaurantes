@@ -43,6 +43,13 @@
       "when": 1793272621943,
       "tag": "0005_installations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793296575709,
+      "tag": "0006_installation_stats",
+      "breakpoints": true
     }
   ]
 }

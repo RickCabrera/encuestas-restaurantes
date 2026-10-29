@@ -299,6 +299,15 @@ export const payments = pgTable(
   (t) => [index("payments_org_period_idx").on(t.organizationId, t.period)],
 );
 
+export type InstallationStats = {
+  orgNames: string[];
+  restaurants: number;
+  tablets: number;
+  users: number;
+  responses30: number;
+  lastResponseAt: string | null;
+};
+
 /**
  * Instalaciones en PC (el .exe) de un cliente. Cada una se activa con la cuenta del negocio en la
  * nube y renueva su licencia periódicamente; si el cliente se desactiva o la instalación se revoca,
@@ -320,6 +329,8 @@ export const installations = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedByName: text("revoked_by_name"),
+    /** Resumen que manda la PC en cada revisión: sus datos viven en la PC, no en la nube. */
+    stats: jsonb("stats").$type<InstallationStats>(),
     ...timestamps,
   },
   (t) => [index("installations_organization_idx").on(t.organizationId)],

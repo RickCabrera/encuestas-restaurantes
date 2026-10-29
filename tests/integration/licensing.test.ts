@@ -73,3 +73,14 @@ describe("renovar", () => {
     expect(await renewInstallation(creds)).toEqual({ ok: false, reason: "revoked" });
   });
 });
+
+describe("resumen de la PC", () => {
+  it("se guarda al activar y se actualiza al renovar", async () => {
+    const stats = { orgNames: ["tacos richi"], restaurants: 1, tablets: 0, users: 2, responses30: 3, lastResponseAt: null };
+    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", stats });
+    if (!a.ok) throw new Error("no activó");
+    expect((await db.query.installations.findFirst())?.stats).toEqual(stats);
+    await renewInstallation({ installationId: a.installationId, secret: a.secret!, stats: { ...stats, responses30: 9 } });
+    expect((await db.query.installations.findFirst())?.stats?.responses30).toBe(9);
+  });
+});

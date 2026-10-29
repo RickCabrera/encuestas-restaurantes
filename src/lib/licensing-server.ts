@@ -2,7 +2,7 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { installations, organizations, users } from "@/db/schema";
+import { installations, organizations, users, type InstallationStats } from "@/db/schema";
 import { randomToken, sha256 } from "./crypto";
 import { signLicense } from "./license-token";
 
@@ -24,6 +24,7 @@ export async function activateInstallation(input: {
   password: string;
   name: string;
   version?: string | null;
+  stats?: InstallationStats | null;
 }): Promise<LicenseResult> {
   const email = input.email.toLowerCase().trim();
   const user = await db.query.users.findFirst({ where: eq(users.email, email) });
@@ -43,6 +44,7 @@ export async function activateInstallation(input: {
       secretHash: sha256(secret),
       appVersion: input.version?.slice(0, 30) || null,
       activatedByEmail: email,
+      stats: input.stats ?? null,
     })
     .returning({ id: installations.id });
   const license = await signLicense({ installationId: row.id, organizationId: org.id, organizationName: org.name });
@@ -54,6 +56,7 @@ export async function renewInstallation(input: {
   installationId: string;
   secret: string;
   version?: string | null;
+  stats?: InstallationStats | null;
 }): Promise<LicenseResult> {
   const row = await db.query.installations.findFirst({
     where: and(eq(installations.id, input.installationId), eq(installations.secretHash, sha256(input.secret))),
@@ -63,7 +66,11 @@ export async function renewInstallation(input: {
   if (row.revokedAt) return { ok: false, reason: "revoked" };
   await db
     .update(installations)
-    .set({ lastSeenAt: new Date(), ...(input.version ? { appVersion: input.version.slice(0, 30) } : {}) })
+    .set({
+      lastSeenAt: new Date(),
+      ...(input.version ? { appVersion: input.version.slice(0, 30) } : {}),
+      ...(input.stats ? { stats: input.stats } : {}),
+    })
     .where(eq(installations.id, row.id));
   if (!row.organization.active) return { ok: false, reason: "inactive" };
   const license = await signLicense({

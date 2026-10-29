@@ -61,6 +61,11 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
                     </span>
                   </p>
                 </div>
+                {c.pcs > 0 ? (
+                  <Badge tone="amber">
+                    {c.pcs === 1 ? "1 PC" : `${c.pcs} PCs`} · {c.pcRestaurants} rest. · {c.pcResponses30} resp.
+                  </Badge>
+                ) : null}
                 {c.active ? <Badge tone="green">Activo</Badge> : <Badge tone="red">Desactivado</Badge>}
                 <ChevronRight size={18} className="text-ink-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
               </Link>

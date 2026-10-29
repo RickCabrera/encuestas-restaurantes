@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
@@ -35,26 +35,47 @@ export async function activateLicenseAction(_prev: ActionState, fd: FormData): P
   if (!result.ok) return { error: result.error, values };
   logger.info("license.local_activated", { organization: result.organizationName });
 
-  const [{ count }] = await db.execute<{ count: number }>(sql`select count(*)::int as count from users`);
-  if (Number(count) === 0) {
-    const [org] = await db
-      .insert(organizations)
-      .values({ name: result.organizationName || "Mi negocio" })
-      .returning({ id: organizations.id });
-    const [user] = await db
-      .insert(users)
-      .values({
-        organizationId: org.id,
-        name: parsed.data.email.split("@")[0],
-        email: parsed.data.email,
-        passwordHash: await bcrypt.hash(parsed.data.password, 10),
-        role: "ADMIN",
-        notifyLowScores: true,
-      })
-      .returning();
-    await createSession(user);
-  }
+  // La cuenta con la que se activó siempre puede entrar a esta PC, con la misma contraseña que en la nube.
+  const user = await ensureLocalAdmin(parsed.data.email, parsed.data.password, result.organizationName);
+  await createSession(user);
   redirect("/admin");
+}
+
+/**
+ * Deja en esta PC una cuenta de administrador con el correo y la contraseña de la nube:
+ * - si el correo ya existe aquí, le pone esa contraseña y la activa como administrador;
+ * - si la PC no tiene cadenas, crea la cadena con el nombre del cliente;
+ * - si ya tiene, entra a la que tiene más restaurantes (la del negocio que ya se usaba aquí).
+ */
+async function ensureLocalAdmin(email: string, password: string, orgName: string) {
+  const passwordHash = await bcrypt.hash(password, 10);
+  const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (existing) {
+    const [u] = await db
+      .update(users)
+      .set({ passwordHash, role: "ADMIN", active: true, sessionVersion: sql`${users.sessionVersion} + 1` })
+      .where(eq(users.id, existing.id))
+      .returning();
+    return u;
+  }
+  const [main] = await db.execute<{ id: string }>(sql`
+    select o.id from organizations o
+    order by (select count(*) from restaurants r where r.organization_id = o.id) desc, o.created_at asc
+    limit 1
+  `);
+  const organizationId =
+    main?.id ??
+    (
+      await db
+        .insert(organizations)
+        .values({ name: orgName || "Mi negocio" })
+        .returning({ id: organizations.id })
+    )[0].id;
+  const [u] = await db
+    .insert(users)
+    .values({ organizationId, name: email.split("@")[0], email, passwordHash, role: "ADMIN", notifyLowScores: true })
+    .returning();
+  return u;
 }
 
 /** "Volver a revisar": pregunta otra vez a la nube (p. ej. después de que reactivaron al cliente). */

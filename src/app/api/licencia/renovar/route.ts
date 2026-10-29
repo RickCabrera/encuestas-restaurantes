@@ -9,10 +9,22 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+const statsSchema = z
+  .object({
+    orgNames: z.array(z.string().max(100)).max(20),
+    restaurants: z.number().int().min(0).max(100000),
+    tablets: z.number().int().min(0).max(100000),
+    users: z.number().int().min(0).max(100000),
+    responses30: z.number().int().min(0).max(10000000),
+    lastResponseAt: z.string().max(40).nullable(),
+  })
+  .nullish();
+
 const body = z.object({
   installationId: z.string().refine(isUuid),
   secret: z.string().min(20).max(200),
   version: z.string().max(50).nullish(),
+  stats: statsSchema,
 });
 
 /** Renueva la licencia de una instalación en PC. Solo en la nube. */

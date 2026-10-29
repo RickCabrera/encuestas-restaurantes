@@ -1,11 +1,11 @@
 import "server-only";
 import { hostname } from "node:os";
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { after, connection } from "next/server";
 import { db } from "@/db";
-import { appSettings } from "@/db/schema";
+import { appSettings, type InstallationStats } from "@/db/schema";
 import { isLocalMode } from "./app-mode";
-import { LICENSE_RENEW_AFTER_MS, verifyLicense, type LicenseClaims } from "./license-token";
+import { LICENSE_CHECK_EVERY_MS, verifyLicense, type LicenseClaims } from "./license-token";
 import { logger } from "./logger";
 import { getSetting, setSetting } from "./settings";
 
@@ -47,6 +47,40 @@ export async function getLicenseState(): Promise<LicenseState> {
   return (await getSetting(K.id)) ? { status: "expired" } : { status: "missing" };
 }
 
+/** Resumen de lo que hay en esta PC, para verlo en la Administración (los datos no salen de la PC). */
+export async function localStats(): Promise<InstallationStats | null> {
+  try {
+    const [row] = await db.execute<{
+      org_names: string[] | null;
+      restaurants: number;
+      tablets: number;
+      users: number;
+      responses30: number;
+      last_response_at: Date | string | null;
+    }>(sql`
+      select
+        (select array_agg(o.name order by o.created_at) from organizations o
+           where exists (select 1 from restaurants r where r.organization_id = o.id)
+              or exists (select 1 from users u where u.organization_id = o.id and u.email <> 'admin@demo.com')) as org_names,
+        (select count(*)::int from restaurants) as restaurants,
+        (select count(*)::int from devices where active and token_hash is not null) as tablets,
+        (select count(*)::int from users where active) as users,
+        (select count(*)::int from responses where submitted_at > now() - interval '30 days') as responses30,
+        (select max(submitted_at) from responses) as last_response_at
+    `);
+    return {
+      orgNames: (row.org_names ?? []).slice(0, 20),
+      restaurants: Number(row.restaurants),
+      tablets: Number(row.tablets),
+      users: Number(row.users),
+      responses30: Number(row.responses30),
+      lastResponseAt: row.last_response_at ? new Date(row.last_response_at).toISOString() : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function postJson(path: string, body: unknown) {
   const res = await fetch(`${licenseServerUrl()}${path}`, {
     method: "POST",
@@ -80,6 +114,7 @@ export async function renewLicense(): Promise<"ok" | "offline" | LicenseBlock | 
       installationId,
       secret,
       version: process.env.APP_VERSION ?? null,
+      stats: await localStats(),
     });
     if (status === 200 && typeof data.license === "string") {
       await store(data);
@@ -112,6 +147,7 @@ export async function activateLicense(email: string, password: string): Promise<
       password,
       name: hostname(),
       version: process.env.APP_VERSION ?? null,
+      stats: await localStats(),
     });
     if (status === 200 && typeof data.license === "string" && (await verifyLicense(data.license))) {
       await clear([K.token, K.id, K.secret, K.block]);
@@ -143,8 +179,9 @@ export async function licenseAllows(): Promise<boolean> {
   const state = await getLicenseState();
   const lastTry = Number((await getSetting(K.lastTry)) ?? 0);
   if (state.status === "valid") {
-    const stale = Date.now() - state.claims.issuedAt.getTime() > LICENSE_RENEW_AFTER_MS;
-    if (stale && Date.now() - lastTry > 10 * 60 * 1000) {
+    // Revisión en segundo plano: si la nube dice que se desactivó, la siguiente petición ya se bloquea.
+    if (Date.now() - lastTry > LICENSE_CHECK_EVERY_MS) {
+      await setSetting(K.lastTry, String(Date.now()));
       try {
         after(() => renewLicense());
       } catch {
