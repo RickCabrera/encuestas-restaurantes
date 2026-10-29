@@ -4,16 +4,13 @@ import { z } from "zod";
 import { db } from "@/db";
 import { devices } from "@/db/schema";
 import { randomToken, sha256 } from "@/lib/crypto";
-import { licenseAllows } from "@/lib/license-local";
+import { restaurantAllowed } from "@/lib/license-local";
 import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 import { ipFromRequest } from "@/lib/request";
 
 /** Vincula una tablet con el código de 6 dígitos generado en el panel. */
 export async function POST(req: Request) {
-  if (!(await licenseAllows())) {
-    return NextResponse.json({ error: "Esta instalación de Sobremesa no tiene licencia activa." }, { status: 402 });
-  }
   const ip = ipFromRequest(req);
   const rl = await rateLimit(`pair:${ip}`, 10, 15 * 60);
   if (!rl.ok) {
@@ -30,6 +27,9 @@ export async function POST(req: Request) {
     where: and(eq(devices.pairingCode, parsed.data.code), gt(devices.pairingExpiresAt, new Date())),
   });
   if (!device) return NextResponse.json({ error: "Código incorrecto o vencido. Genera uno nuevo en el panel." }, { status: 404 });
+  if (!(await restaurantAllowed(device.restaurantId))) {
+    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Sobremesa." }, { status: 402 });
+  }
 
   const token = randomToken();
   await db

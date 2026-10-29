@@ -290,9 +290,8 @@ function Update-ListoPage([string]$InviteLink = '') {
       '<p>Toca el botón <strong>Activar Sobremesa</strong>, aquí abajo, y entra con el correo y la contraseña de la cuenta de tu negocio en la web de Sobremesa (la que te dimos al contratar). Esta PC necesita internet para activarse y para renovar su licencia una vez al día; sin internet sigue funcionando hasta 7 días.</p>' +
       '<p class="note">Otra forma, desde otro equipo de la misma red: abre este enlace. Sirve una sola vez y vence en 7 días.<br /><span class="link">' + (ConvertTo-Html $InviteLink) + '</span></p>'
   } else {
-    $invite = '<h2>3. Entra al sistema</h2>' +
-      '<p>Toca el botón <strong>Abrir Sobremesa Encuestas</strong>, aquí abajo, o usa el icono del Escritorio.</p>' +
-      '<p class="note">Para dar de alta otra cadena usa el acceso directo "Generar enlace de alta nuevo" del menú Inicio.</p>'
+    $invite = '<h2>3. Entra con tu cuenta de Sobremesa</h2>' +
+      '<p>Toca el botón <strong>Abrir Sobremesa Encuestas</strong>, aquí abajo, o usa el icono del Escritorio, y entra con el correo y la contraseña de la cuenta de tu negocio en Sobremesa (la misma de la web). La primera vez esta PC necesita internet; después sigue funcionando hasta 7 días sin internet.</p>'
   }
 
   $template = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'listo.template.html'), [System.Text.Encoding]::UTF8)

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/inicio/route";
 import { db } from "@/db";
 import { signupInvites } from "@/db/schema";
-import { findUsableInvite } from "@/lib/invites";
 import { createOrg, createUser, resetDb } from "./helpers";
 
 const KEY = "k".repeat(48);
@@ -26,13 +25,11 @@ describe("/inicio (acceso directo de la versión instalada en PC)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("sin usuarios lleva al registro con una invitación de cadena nueva ya puesta", async () => {
+  it("sin usuarios lleva al login (las cadenas vienen de la nube) y no crea invitaciones", async () => {
     const res = await ask();
     expect(res.status).toBe(307);
-    const location = res.headers.get("location")!;
-    expect(location).toMatch(/^\/registro\?codigo=[A-Za-z0-9_-]{43}$/);
-    const invite = await findUsableInvite(location.split("codigo=")[1]);
-    expect(invite?.kind).toBe("NEW_ORG");
+    expect(res.headers.get("location")).toBe("/login");
+    expect(await db.query.signupInvites.findMany()).toHaveLength(0);
   });
 
   it("acepta las tres formas de loopback", async () => {

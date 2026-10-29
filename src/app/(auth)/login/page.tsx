@@ -1,20 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Notice } from "@/components/ui/primitives";
+import { isLocalMode } from "@/lib/app-mode";
 import { getSessionUser } from "@/lib/auth";
-import { requireLicense } from "@/lib/license-local";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Iniciar sesión" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
-  await requireLicense();
   if (await getSessionUser()) redirect("/admin");
   const sp = await searchParams;
   return (
     <>
       <h1 className="text-[28px] font-semibold">Iniciar sesión</h1>
-      <p className="mt-1 mb-8 text-ink-soft">Entra con el correo que te dio el administrador.</p>
+      <p className="mt-1 mb-8 text-ink-soft">
+        {isLocalMode()
+          ? "Entra con el correo y la contraseña de tu cuenta de Sobremesa (la misma de la web). La primera vez, esta PC necesita internet."
+          : "Entra con el correo que te dio el administrador."}
+      </p>
       {sp.reset ? (
         <div className="mb-6">
           <Notice tone="green">Tu contraseña se actualizó. Ya puedes iniciar sesión.</Notice>

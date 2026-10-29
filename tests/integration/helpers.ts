@@ -22,7 +22,7 @@ export async function resetDb() {
     migrated = true;
   }
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, app_settings, installations, restaurants, users, organizations CASCADE`,
+    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, app_settings, installations, org_licenses, restaurants, users, organizations CASCADE`,
   );
 }
 

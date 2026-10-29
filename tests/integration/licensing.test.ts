@@ -84,3 +84,34 @@ describe("resumen de la PC", () => {
     expect((await db.query.installations.findFirst())?.stats?.responses30).toBe(9);
   });
 });
+
+describe("la misma PC (llave de la PC)", () => {
+  const deviceKey = "llave-de-la-pc-de-prueba-0123456789";
+
+  it("vuelve a usar su instalación y un gerente entra solo si la PC ya está activada", async () => {
+    expect(await activateInstallation({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
+      ok: false,
+      reason: "role",
+    });
+    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    const b = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    if (!a.ok || !b.ok) throw new Error("no activó");
+    expect(b.installationId).toBe(a.installationId);
+    expect(b.user).toMatchObject({ email: A.admin.email, role: "ADMIN" });
+    const m = await activateInstallation({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey });
+    expect(m.ok && m.user?.role).toBe("MANAGER");
+    expect(await db.query.installations.findMany()).toHaveLength(1);
+  });
+
+  it("dada de baja no se reactiva al volver a entrar; reactivada en el hub sí", async () => {
+    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    if (!a.ok) throw new Error("no activó");
+    await db.update(s.installations).set({ revokedAt: new Date() }).where(eq(s.installations.id, a.installationId));
+    expect(await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
+      ok: false,
+      reason: "revoked",
+    });
+    await db.update(s.installations).set({ revokedAt: null }).where(eq(s.installations.id, a.installationId));
+    expect((await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).ok).toBe(true);
+  });
+});

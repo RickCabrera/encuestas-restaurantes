@@ -60,7 +60,7 @@ Muestra la versión instalada y:
 
 1. **La IP de la PC** en la red local.
 2. **La dirección que se escribe en las tablets**, por ejemplo `http://192.168.1.50:3000`. Es también la dirección del panel desde otros equipos de la red. Hay un botón para copiarla, y el panel la repite en **Configuración → Tablets**.
-3. **El botón grande "Activar Sobremesa"**, mientras no exista ningún usuario: pide el correo y la contraseña de la cuenta del negocio en la nube (la licencia, ver más abajo) y con esa misma cuenta crea aquí la cadena y su administrador. Debajo, en chico, queda el enlace de un solo uso (vence en 7 días) por si prefieres crear la cadena desde otro equipo de la red. Cuando ya hay usuarios, el botón dice **Abrir Sobremesa Encuestas**.
+3. **El botón grande "Abrir Sobremesa Encuestas"**: lleva al login, donde se entra con el correo y la contraseña de la cuenta del negocio en la web de Sobremesa (ver "Licencia de la PC", más abajo). Ya no hay enlace de alta: las cadenas vienen de la nube.
 
 La página solo la pueden leer los administradores de Windows; por eso se abre en una ventana propia y no en el navegador. Para verla de nuevo: menú Inicio → **Sobremesa Encuestas → Datos de la instalación (Listo)**.
 
@@ -207,7 +207,6 @@ En el menú Inicio, carpeta **Sobremesa Encuestas**. El primero es el de todos l
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Sobremesa Encuestas**                     | Abre el sistema en su propia ventana. También está en el Escritorio. Ver [Abrir el sistema](#abrir-el-sistema).                                |
 | **Datos de la instalación (Listo)**         | La página "Listo": versión, IP, dirección para las tablets, avisos y el botón para crear la cadena.                                            |
-| **Generar enlace de alta nuevo**            | Crea otro enlace de un solo uso para dar de alta una cadena con su usuario maestro. Úsalo si el primero venció o ya se usó.                    |
 | **Restablecer contraseña de administrador** | Lista a los administradores del panel, pide el correo y la contraseña nueva (mínimo 8 caracteres). Cierra las sesiones abiertas de esa cuenta. |
 | **Actualizar la IP**                        | Pone en el sistema la IP actual de la PC. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia).                                           |
 
@@ -279,9 +278,12 @@ Seguridad:
 
 ## Licencia de la PC
 
-La versión instalada no funciona sola: cada PC se **activa con la cuenta de administrador del negocio en la nube** (la que se da de alta desde la Administración, `/plataforma`). Así nadie puede usar Sobremesa con solo copiar el instalador.
+La versión instalada no funciona sola: **se entra con las cuentas de la nube** (las de los clientes que se dan de alta en la Administración, `/plataforma`). Así nadie puede usar Sobremesa con solo copiar el instalador, y cada negocio ve solo lo suyo.
 
-- **Activación:** la primera vez, "Activar Sobremesa" pide el correo y la contraseña de la cuenta del negocio en la web. Esa misma cuenta (correo y contraseña de la nube) queda como administrador en la PC: si ya existía, se le pone la contraseña de la nube; si la PC ya tenía datos de otra cuenta, entra a esa cadena; si la PC estaba vacía, se crea la cadena con el nombre del cliente.
-- **Renovación:** mientras se usa (panel, tablets o QR), la PC revisa con la nube cada 5 minutos y renueva su licencia; de paso manda un resumen (cadena, restaurantes, tablets, respuestas) que se ve en la ficha del cliente. La licencia firmada vale 7 días: sin internet sigue funcionando ese tiempo.
-- **Bloqueo:** si el cliente se desactiva en la Administración, o se da de baja esa PC (ficha del cliente → Instalaciones en PC), en su siguiente revisión el panel lleva a "Activar Sobremesa", las tablets se desvinculan con un aviso y el QR deja de recibir respuestas. Al reactivar al cliente, la PC vuelve sola (o con "Volver a revisar").
+- **Iniciar sesión:** el login de la PC valida el correo y la contraseña en la nube. La nube responde a qué cliente pertenece la cuenta y entrega la licencia de ese cliente para esta PC. En la PC, cada cliente tiene **su propia cadena** (`organizations.cloud_org_id`): la primera vez se crea, y la persona entra a la cadena de SU cliente, con su rol y la misma contraseña de la web.
+- **Primera vez en una PC:** la activa un administrador del negocio. Un gerente de la nube solo puede entrar a una PC que su negocio ya activó.
+- **Cuentas creadas en la PC** (p. ej. gerentes que el negocio agrega desde Usuarios): entran con su contraseña de la PC mientras la cadena tenga licencia vigente.
+- **Cuentas que no existen en la nube** (o cadenas de antes de las licencias, sin cliente de la nube): no entran.
+- **Renovación:** mientras se usa (panel, tablets o QR), cada cadena revisa con la nube cada 5 minutos y renueva su licencia; de paso manda un resumen (restaurantes, tablets, usuarios, respuestas) que se ve en la ficha del cliente. La licencia firmada vale 7 días: sin internet sigue funcionando ese tiempo.
+- **Bloqueo:** si el cliente se desactiva en la Administración, o se da de baja esa PC (ficha del cliente → Instalaciones en PC), en unos minutos se cierra la sesión, las tablets de ese negocio se desvinculan con un aviso y su QR deja de recibir respuestas. Al reactivar al cliente o la PC, vuelve a funcionar.
 - La licencia la firma la nube con `LICENSE_PRIVATE_KEY` y la PC la verifica con la llave pública incluida en el código: no se puede fabricar desde la PC. El servidor de licencias es `https://encuestas-restaurantes-production.up.railway.app` (se puede cambiar con `LICENSE_SERVER_URL` en el `.env` de la PC).

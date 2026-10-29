@@ -7,6 +7,7 @@ import { cache } from "react";
 import { db } from "@/db";
 import { users, type User } from "@/db/schema";
 import { isLocalMode, secureCookies } from "./app-mode";
+import { orgAllowed } from "./license-local";
 import { buildSessionUser, type SessionUser } from "./session-user";
 
 export type { SessionUser };
@@ -57,6 +58,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     if (!payload.sub) return null;
     const user = await db.query.users.findFirst({ where: eq(users.id, payload.sub) });
     if (!user || !user.active || user.sessionVersion !== payload.sv) return null;
+    // En la PC, la cadena tiene que tener licencia vigente de su cliente de la nube.
+    if (isLocalMode() && !(await orgAllowed(user.organizationId))) return null;
     return await buildSessionUser(user);
   } catch {
     return null;

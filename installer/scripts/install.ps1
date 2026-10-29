@@ -279,10 +279,8 @@ try {
   Register-BackupTask
   Disable-AcSleep
 
-  # El enlace de alta solo se genera cuando todavía no hay ningún usuario.
-  $link = ''
-  if ((Get-UserCount $values) -eq 0) { $link = New-OrgInviteLink }
-  Update-ListoPage $link
+  # Ya no hay enlace de alta: las cadenas vienen de la nube y se entra con la cuenta del negocio.
+  Update-ListoPage ''
 
   $state = [ordered]@{ ok = $true; version = $Version; update = $isUpdate; date = (Get-Date -Format 's') }
   [System.IO.File]::WriteAllText($StateFile, ($state | ConvertTo-Json), $Utf8NoBom)

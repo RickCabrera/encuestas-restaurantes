@@ -8,12 +8,8 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 # Se vuelve a escribir cada vez que se abre: la IP de la PC pudo cambiar desde la instalación,
-# y una página vieja diría que todo sigue igual. Se conserva el enlace de alta que mostraba.
-$previousInvite = ''
-try {
-  if (Test-Path $ListoJson) { $previousInvite = [string]([System.IO.File]::ReadAllText($ListoJson) | ConvertFrom-Json).inviteLink }
-} catch { $previousInvite = '' }
-try { Update-ListoPage $previousInvite } catch { }
+# y una página vieja diría que todo sigue igual. Ya no hay enlace de alta: se entra con la cuenta de la nube.
+try { Update-ListoPage '' } catch { }
 if (-not (Test-Path $ListoHtml)) {
   [System.Windows.Forms.MessageBox]::Show("Todavía no existe la página de instalación. Revisa $LogDir\instalacion.log", $AppName) | Out-Null
   exit 1

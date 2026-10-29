@@ -4,7 +4,9 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/action-state";
 import { createSession } from "@/lib/auth";
-import { registerWithInvite } from "@/lib/invites";
+import { isLocalMode } from "@/lib/app-mode";
+import { findUsableInvite, registerWithInvite } from "@/lib/invites";
+import { orgAllowed } from "@/lib/license-local";
 import { logger } from "@/lib/logger";
 import { ORG_NAME_MAX, ORG_NAME_MIN } from "@/lib/orgs";
 import { passwordSchema } from "@/lib/password-rules";
@@ -56,6 +58,13 @@ async function signupActionInner(formData: FormData, values: Record<string, stri
   const limited = await rateLimit(`signup:ip:${ip}`, 10, 15 * 60);
   if (!limited.ok) {
     return { error: `Demasiados intentos. Intenta de nuevo en ${Math.ceil(limited.retryAfterSec / 60)} min.`, values };
+  }
+
+  if (isLocalMode()) {
+    const invite = await findUsableInvite(d.codigo);
+    if (!invite?.organizationId || !(await orgAllowed(invite.organizationId))) {
+      redirect(`/registro?codigo=${encodeURIComponent(d.codigo)}`);
+    }
   }
 
   const result = await registerWithInvite({
