@@ -24,6 +24,7 @@ const body = z.object({
   email: z.string().max(200),
   password: z.string().max(200),
   name: z.string().max(200).default("PC"),
+  deviceKey: z.string().min(20).max(200).nullish(),
   version: z.string().max(50).nullish(),
   stats: statsSchema,
 });

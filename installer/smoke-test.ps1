@@ -149,9 +149,9 @@ function Check-Running([bool]$IsUpdate) {
   $login = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/login'
   Check (-not $login.Headers.ContainsKey('Strict-Transport-Security')) 'Sin HSTS (modo local)'
   Check ($login.Headers.ContainsKey('Content-Security-Policy')) 'Con Content-Security-Policy'
-  # Sin licencia, el panel lleva a activar la PC con la cuenta del negocio en la nube.
-  $activar = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/admin'
-  Check ($activar.StatusCode -eq 200 -and $activar.Content -match 'Activar Sobremesa') 'Sin licencia, /admin lleva a Activar Sobremesa'
+  # Sin sesión, el panel lleva al login, que pide la cuenta del negocio en la nube.
+  $panel = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/admin'
+  Check ($panel.StatusCode -eq 200 -and $panel.Content -match 'cuenta de Sobremesa') 'Sin sesion, /admin lleva al login con la cuenta de Sobremesa'
 
   $services = @{ SobremesaEncuestasDB = 'NT AUTHORITY\NetworkService'; SobremesaEncuestasApp = 'NT AUTHORITY\LocalService' }
   foreach ($name in $services.Keys) {
@@ -201,11 +201,9 @@ try {
   Check ((Invoke-Sql 'select count(*) from users') -eq '0') 'Sin usuarios: no se corrio el seed'
   Check ([int](Invoke-Sql 'select count(*) from drizzle.__drizzle_migrations') -ge 3) 'Migraciones aplicadas'
   $listo = Get-Content (Join-Path $Data 'listo.json') -Raw | ConvertFrom-Json
-  $appUrl = (Read-Env)['APP_URL']
-  Check ($listo.inviteLink -match ('^' + [regex]::Escape($appUrl) + '/registro\?codigo=[A-Za-z0-9_-]{43}$')) 'Enlace de alta de un solo uso con la IP de la PC'
-  $signup = Invoke-WebRequest -UseBasicParsing -Uri ($listo.inviteLink -replace [regex]::Escape($appUrl), 'http://127.0.0.1:3000')
-  Check ($signup.StatusCode -eq 200) 'El enlace de alta abre la pagina de registro'
-  Check-Inicio '^/registro\?codigo=[A-Za-z0-9_-]{43}$'
+  Check (-not $listo.inviteLink) 'Sin enlace de alta: las cadenas vienen de la nube'
+  Check ((Invoke-Sql 'select count(*) from signup_invites') -eq '0') 'No se crearon invitaciones'
+  Check-Inicio '^/login$'
 
   Section '2. Respaldo'
   & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $App 'tools\backup.ps1')

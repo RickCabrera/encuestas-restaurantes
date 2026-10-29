@@ -59,6 +59,11 @@ export const organizations = pgTable("organizations", {
   internal: boolean("internal").notNull().default(false),
   /** Día del mes (1–28) en que vence la mensualidad. */
   billingDay: integer("billing_day").notNull().default(5),
+  /**
+   * Solo en la PC: el cliente de la nube al que corresponde esta cadena. Una cadena sin cliente
+   * de la nube no puede usarse en la PC (nadie entra, ni tablets ni QR).
+   */
+  cloudOrgId: uuid("cloud_org_id").unique(),
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
@@ -326,6 +331,8 @@ export const installations = pgTable(
     secretHash: text("secret_hash").notNull().unique(),
     appVersion: text("app_version"),
     activatedByEmail: text("activated_by_email").notNull(),
+    /** SHA-256 de la llave de la PC: la misma PC y el mismo cliente reusan su instalación. */
+    deviceKeyHash: text("device_key_hash"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedByName: text("revoked_by_name"),
@@ -335,6 +342,23 @@ export const installations = pgTable(
   },
   (t) => [index("installations_organization_idx").on(t.organizationId)],
 );
+
+/**
+ * Solo en la PC: la licencia de cada cadena, firmada por la nube para su cliente.
+ * Cada cadena tiene la suya; sin licencia vigente esa cadena no opera en la PC.
+ */
+export const orgLicenses = pgTable("org_licenses", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  installationId: uuid("installation_id").notNull(),
+  secret: text("secret").notNull(),
+  token: text("token"),
+  /** "inactive" (cliente desactivado) o "revoked" (PC dada de baja): lo dijo la nube. */
+  block: text("block"),
+  lastCheckAt: timestamp("last_check_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Personas interesadas que dejaron sus datos en la landing para pedir una demo. */
 export const demoRequests = pgTable(
@@ -451,6 +475,7 @@ export type Answer = typeof answers.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type Installation = typeof installations.$inferSelect;
+export type OrgLicense = typeof orgLicenses.$inferSelect;
 export type PaymentMethod = (typeof paymentMethod.enumValues)[number];
 export type DemoRequestStatus = (typeof demoRequestStatus.enumValues)[number];
 export type SignupInvite = typeof signupInvites.$inferSelect;

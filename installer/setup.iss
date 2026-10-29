@@ -72,14 +72,13 @@ Source: "{#PayloadDir}\tools\precheck.ps1"; Flags: dontcopy
 Name: "{group}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
 Name: "{autodesktop}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
 Name: "{group}\Datos de la instalación (Listo)"; Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""
-Name: "{group}\Generar enlace de alta nuevo"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\nuevo-enlace.ps1"""
 Name: "{group}\Restablecer contraseña de administrador"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\restablecer-contrasena.ps1"""
 Name: "{group}\Actualizar la IP"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\actualizar-ip.ps1"""
 
 [Run]
 Filename: "{app}\SobremesaEncuestas.exe"; Description: "Abrir Sobremesa Encuestas"; Flags: postinstall nowait skipifsilent; Check: InstallSucceeded
 ; Página "Listo". Se abre con permisos de administrador porque solo ellos pueden leerla.
-Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""; Description: "Ver los datos de la instalación (IP, dirección para las tablets y enlace de alta)"; Flags: postinstall nowait skipifsilent runascurrentuser; Check: InstallSucceeded
+Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""; Description: "Ver los datos de la instalación (IP y dirección para las tablets)"; Flags: postinstall nowait skipifsilent runascurrentuser; Check: InstallSucceeded
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\services"

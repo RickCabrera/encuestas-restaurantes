@@ -1,8 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { sql } from "drizzle-orm";
-import { db } from "@/db";
 import { isLocalMode } from "@/lib/app-mode";
-import { createOrgInvite } from "@/lib/invites";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +17,7 @@ function sameKey(given: string | null, expected: string | undefined) {
 
 /**
  * Puerta de entrada del acceso directo "Sobremesa Encuestas" en la versión instalada en PC
- * (docs/INSTALAR-PC.md): sin usuarios lleva a crear la cadena y su usuario maestro; con usuarios, al login.
+ * (docs/INSTALAR-PC.md): lleva al login, donde se entra con la cuenta del negocio en la nube.
  *
  * Solo existe con APP_MODE=local, para peticiones desde la propia PC y con la llave que el
  * instalador guardó en ella. En nube, o desde la red, responde 404.
@@ -32,8 +29,6 @@ export async function GET(request: Request) {
   if (!LOOPBACK.has(request.headers.get("x-forwarded-for") ?? "")) return notFound();
   if (!sameKey(new URL(request.url).searchParams.get("llave"), process.env.LOCAL_SETUP_KEY)) return notFound();
 
-  const [{ count }] = await db.execute<{ count: number }>(sql`select count(*)::int as count from users`);
-  if (count > 0) return goTo("/login");
-  const { token } = await createOrgInvite();
-  return goTo(`/registro?codigo=${token}`);
+  // Las cadenas vienen de la nube: siempre se entra con la cuenta del negocio (ver src/lib/license-local.ts).
+  return goTo("/login");
 }

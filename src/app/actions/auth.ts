@@ -6,9 +6,10 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { organizations, passwordResetTokens, users } from "@/db/schema";
+import { organizations, passwordResetTokens, users, type User } from "@/db/schema";
 import type { ActionState } from "@/lib/action-state";
 import { isLocalMode } from "@/lib/app-mode";
+import { localLogin } from "@/lib/license-local";
 import { createSession, destroySession, requireUser } from "@/lib/auth";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { escapeHtml, sendEmail } from "@/lib/email";
@@ -60,11 +61,22 @@ async function loginActionInner(_prev: ActionState, formData: FormData): Promise
     return { error: `Demasiados intentos. Intenta de nuevo en ${mins} min.`, values };
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.email, email) });
-  const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !valid || !user.active) {
-    logger.warn("auth.login_failed", { email, ip });
-    return { error: "Correo o contraseña incorrectos.", values };
+  let user: User | undefined;
+  if (isLocalMode()) {
+    // En la PC se entra con la cuenta de la nube (ver src/lib/license-local.ts).
+    const local = await localLogin(email, password);
+    if (!local.ok) {
+      logger.warn("auth.login_failed", { email, ip, local: true });
+      return { error: local.error, values };
+    }
+    user = local.user;
+  } else {
+    user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+    if (!user || !valid || !user.active) {
+      logger.warn("auth.login_failed", { email, ip });
+      return { error: "Correo o contraseña incorrectos.", values };
+    }
   }
 
   const org = await db.query.organizations.findFirst({

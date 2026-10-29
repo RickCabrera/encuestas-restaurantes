@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   createClientAdminInviteAction,
   deleteClientAction,
+  restoreInstallationAction,
   revokeInstallationAction,
   setClientActiveAction,
   updateClientAction,
@@ -185,7 +186,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
       <Section
         title="Instalaciones en PC"
-        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó con la cuenta del negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en unos minutos (o, si la PC no tiene internet, en máximo 7 días)."
+        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó al entrar con una cuenta de este negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en unos minutos (o, si la PC no tiene internet, en máximo 7 días)."
       >
         {pcs.length === 0 ? (
           <div className="panel px-5 py-6 text-sm text-ink-soft">No tiene ninguna PC activada.</div>
@@ -213,12 +214,22 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                     </p>
                   ) : null}
                 </div>
-                {pc.revokedAt ? null : (
+                {pc.revokedAt ? (
+                  <form action={restoreInstallationAction.bind(null, pc.id)}>
+                    <ConfirmSubmit
+                      variant="secondary"
+                      size="sm"
+                      message={`¿Reactivar "${pc.name}"? Vuelve a funcionar en su siguiente revisión (unos minutos).`}
+                    >
+                      Reactivar
+                    </ConfirmSubmit>
+                  </form>
+                ) : (
                   <form action={revokeInstallationAction.bind(null, pc.id)}>
                     <ConfirmSubmit
                       variant="danger"
                       size="sm"
-                      message={`¿Dar de baja "${pc.name}"? Esa PC dejará de funcionar y tendrá que activarse otra vez con la cuenta del negocio.`}
+                      message={`¿Dar de baja "${pc.name}"? Esa PC dejará de funcionar para este cliente en unos minutos, hasta que la reactives.`}
                     >
                       Dar de baja
                     </ConfirmSubmit>

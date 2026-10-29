@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Notice } from "@/components/ui/primitives";
-import { requireLicense } from "@/lib/license-local";
+import { isLocalMode } from "@/lib/app-mode";
+import { orgAllowed } from "@/lib/license-local";
 import { findUsableInvite, INVITE_INVALID_MESSAGE } from "@/lib/invites";
 import { SignupForm } from "./signup-form";
 
@@ -13,11 +14,11 @@ export const metadata = {
 
 /** Registro con enlace de invitación de un solo uso. Sin un código vigente no hay formulario. */
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ codigo?: string | string[] }> }) {
-  // En la PC la cuenta se crea al activar la licencia; sin licencia, primero se activa.
-  await requireLicense();
   const { codigo } = await searchParams;
   const token = typeof codigo === "string" ? codigo : null;
-  const invite = await findUsableInvite(token);
+  let invite = await findUsableInvite(token);
+  // En la PC no se dan de alta cadenas (vienen de la nube) y solo se invita a cadenas con licencia.
+  if (invite && isLocalMode() && (!invite.organizationId || !(await orgAllowed(invite.organizationId)))) invite = null;
 
   if (!invite || !token) {
     return (

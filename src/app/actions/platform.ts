@@ -158,6 +158,21 @@ export async function revokeInstallationAction(installationId: string) {
   }
 }
 
+/** Reactivar una PC dada de baja: en su siguiente revisión vuelve a funcionar. */
+export async function restoreInstallationAction(installationId: string) {
+  const me = await requirePlatformAdmin();
+  if (!isUuid(installationId)) return;
+  const [row] = await db
+    .update(installations)
+    .set({ revokedAt: null, revokedByName: null })
+    .where(eq(installations.id, installationId))
+    .returning({ organizationId: installations.organizationId });
+  if (row) {
+    logger.info("platform.installation_restored", { by: me.id, installationId });
+    revalidateClients(row.organizationId);
+  }
+}
+
 // ───────────────────────── Solicitudes ─────────────────────────
 
 export async function updateDemoRequestAction(id: string, _prev: ActionState, fd: FormData): Promise<ActionState> {

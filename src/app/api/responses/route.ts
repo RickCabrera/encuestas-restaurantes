@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { authenticateDevice } from "@/lib/device-auth";
-import { licenseAllows } from "@/lib/license-local";
+import { surveyAllowed } from "@/lib/license-local";
 import { logger } from "@/lib/logger";
 import { pruneRateLimits, rateLimit } from "@/lib/rate-limit";
 import { ipFromRequest } from "@/lib/request";
@@ -12,9 +12,6 @@ import { SubmitError, submitResponse, submitSchema } from "@/lib/submit-response
  * - Sin token → canal QR (celular del comensal).
  */
 export async function POST(req: Request) {
-  if (!(await licenseAllows())) {
-    return NextResponse.json({ error: "Esta instalación de Sobremesa no tiene licencia activa." }, { status: 402 });
-  }
   const ip = ipFromRequest(req);
   let body: unknown;
   try {
@@ -24,6 +21,9 @@ export async function POST(req: Request) {
   }
   const parsed = submitSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  if (!(await surveyAllowed(parsed.data.surveyId))) {
+    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Sobremesa." }, { status: 402 });
+  }
 
   const hasToken = req.headers.get("authorization")?.startsWith("Bearer ");
   try {
