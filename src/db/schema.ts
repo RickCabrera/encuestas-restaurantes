@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   customType,
@@ -37,6 +38,12 @@ export const questionMetric = pgEnum("question_metric", [
 export const responseChannel = pgEnum("response_channel", ["KIOSK", "QR"]);
 /** USER: cuenta dentro de una cadena que ya existe. NEW_ORG: da de alta una cadena nueva con su administrador. */
 export const inviteKind = pgEnum("invite_kind", ["USER", "NEW_ORG"]);
+/**
+ * Cómo usa Sobremesa instalado en PC un cliente (se elige en la Administración):
+ * CLOUD: el .exe abre la web (una sola base, la de la nube). LOCAL: sus datos viven solo en su PC.
+ * SYNC: la PC trabaja con su base y se sincroniza con la nube en los dos sentidos.
+ */
+export const pcMode = pgEnum("pc_mode", ["CLOUD", "LOCAL", "SYNC"]);
 /** Cómo se pagó una mensualidad (los pagos se capturan a mano en el panel de Administración). */
 export const paymentMethod = pgEnum("payment_method", ["TRANSFER", "CASH", "CARD", "OTHER"]);
 /** Estado de una solicitud de demo que llegó desde la landing. */
@@ -59,6 +66,7 @@ export const organizations = pgTable("organizations", {
   internal: boolean("internal").notNull().default(false),
   /** Día del mes (1–28) en que vence la mensualidad. */
   billingDay: integer("billing_day").notNull().default(5),
+  pcMode: pcMode("pc_mode").notNull().default("CLOUD"),
   /**
    * Solo en la PC: el cliente de la nube al que corresponde esta cadena. Una cadena sin cliente
    * de la nube no puede usarse en la PC (nadie entra, ni tablets ni QR).
@@ -91,6 +99,10 @@ export const users = pgTable(
     platformAdmin: boolean("platform_admin").notNull().default(false),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("users_organization_idx").on(t.organizationId)],
 );
@@ -117,6 +129,10 @@ export const restaurants = pgTable(
     logoMime: text("logo_mime"),
     logoUpdatedAt: timestamp("logo_updated_at", { withTimezone: true }),
     ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("restaurants_organization_idx").on(t.organizationId)],
 );
@@ -130,6 +146,9 @@ export const userRestaurants = pgTable(
     restaurantId: uuid("restaurant_id")
       .notNull()
       .references(() => restaurants.id, { onDelete: "cascade" }),
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userId, t.restaurantId] })],
 );
@@ -152,6 +171,10 @@ export const surveys = pgTable(
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [
     index("surveys_restaurant_idx").on(t.restaurantId),
@@ -175,6 +198,10 @@ export const questions = pgTable(
     required: boolean("required").notNull().default(true),
     metric: questionMetric("metric").notNull().default("NONE"),
     options: jsonb("options").$type<QuestionOptions>(),
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("questions_survey_idx").on(t.surveyId)],
 );
@@ -194,6 +221,10 @@ export const devices = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     active: boolean("active").notNull().default(true),
     ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("devices_pairing_idx").on(t.pairingCode)],
 );
@@ -217,6 +248,10 @@ export const responses = pgTable(
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
     durationSec: integer("duration_sec"),
     lowScore: boolean("low_score").notNull().default(false),
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [
     index("responses_restaurant_submitted_idx").on(t.restaurantId, t.submittedAt),
@@ -237,6 +272,10 @@ export const answers = pgTable(
     valueNumber: integer("value_number"),
     valueBool: boolean("value_bool"),
     valueText: text("value_text"),
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("answers_response_idx").on(t.responseId), index("answers_question_idx").on(t.questionId)],
 );
@@ -336,6 +375,7 @@ export const installations = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedByName: text("revoked_by_name"),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
     /** Resumen que manda la PC en cada revisión: sus datos viven en la PC, no en la nube. */
     stats: jsonb("stats").$type<InstallationStats>(),
     ...timestamps,
@@ -357,7 +397,41 @@ export const orgLicenses = pgTable("org_licenses", {
   /** "inactive" (cliente desactivado) o "revoked" (PC dada de baja): lo dijo la nube. */
   block: text("block"),
   lastCheckAt: timestamp("last_check_at", { withTimezone: true }),
+  /** Modo que eligió la Administración para este cliente (llega con cada licencia). */
+  mode: pcMode("mode").notNull().default("LOCAL"),
+  /** Sincronización: hasta dónde ya bajó cambios de la nube y hasta dónde subió los suyos, por tabla. */
+  syncPulled: jsonb("sync_pulled").$type<Record<string, string>>(),
+  syncPushed: jsonb("sync_pushed").$type<Record<string, string>>(),
+  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
+  lastSyncError: text("last_sync_error"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Borrados en las tablas que se sincronizan (los escribe un trigger), para repetirlos del otro lado. */
+export const syncDeletions = pgTable(
+  "sync_deletions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tableName: text("table_name").notNull(),
+    /** Llave del renglón borrado (id, o "user_id:restaurant_id" en user_restaurants). */
+    rowKey: text("row_key").notNull(),
+    organizationId: uuid("organization_id"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull().defaultNow(),
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
+  },
+  (t) => [index("sync_deletions_org_idx").on(t.organizationId, t.deletedAt)],
+);
+
+/** Entrada de un solo uso a la web desde el .exe (modo Nube): la PC valida y la web abre la sesión. */
+export const loginTokens = pgTable("login_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tokenHash: text("token_hash").notNull().unique(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  ...timestamps,
 });
 
 /** Personas interesadas que dejaron sus datos en la landing para pedir una demo. */
@@ -476,6 +550,7 @@ export type Payment = typeof payments.$inferSelect;
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type Installation = typeof installations.$inferSelect;
 export type OrgLicense = typeof orgLicenses.$inferSelect;
+export type PcMode = (typeof pcMode.enumValues)[number];
 export type PaymentMethod = (typeof paymentMethod.enumValues)[number];
 export type DemoRequestStatus = (typeof demoRequestStatus.enumValues)[number];
 export type SignupInvite = typeof signupInvites.$inferSelect;

@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/db";
 import * as s from "@/db/schema";
 import { verifyLicense } from "@/lib/license-token";
-import { activateInstallation, renewInstallation } from "@/lib/licensing-server";
+import { activateInstallation, type CloudRedirect, renewInstallation } from "@/lib/licensing-server";
 import { type Chain, resetDb, seedChain } from "./helpers";
 
 let A: Chain;
@@ -12,12 +12,19 @@ const PASSWORD = "Secreta12345";
 beforeEach(async () => {
   await resetDb();
   A = await seedChain("Tacos A", "aaa");
+  // Estas pruebas son de las licencias de la PC (modos Local y Sincronizado).
+  await db.update(s.organizations).set({ pcMode: "LOCAL" }).where(eq(s.organizations.id, A.org.id));
 });
+
+/** Aquí nunca es modo Nube (ver beforeEach). */
+async function activate(input: Parameters<typeof activateInstallation>[0]) {
+  return (await activateInstallation(input)) as Exclude<Awaited<ReturnType<typeof activateInstallation>>, CloudRedirect>;
+}
 afterAll(resetDb);
 
 describe("activar una PC", () => {
   it("con la cuenta del administrador del negocio da una licencia válida para esa cadena", async () => {
-    const r = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC-CAJA", version: "1.1.0" });
+    const r = await activate({ email: A.admin.email, password: PASSWORD, name: "PC-CAJA", version: "1.1.0" });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.secret).toBeTruthy();
@@ -29,20 +36,20 @@ describe("activar una PC", () => {
   });
 
   it("rechaza contraseña incorrecta, gerentes y clientes desactivados", async () => {
-    expect(await activateInstallation({ email: A.admin.email, password: "mala", name: "x" })).toEqual({
+    expect(await activate({ email: A.admin.email, password: "mala", name: "x" })).toEqual({
       ok: false,
       reason: "credentials",
     });
-    expect(await activateInstallation({ email: "nadie@x.mx", password: PASSWORD, name: "x" })).toEqual({
+    expect(await activate({ email: "nadie@x.mx", password: PASSWORD, name: "x" })).toEqual({
       ok: false,
       reason: "credentials",
     });
-    expect(await activateInstallation({ email: A.manager.email, password: PASSWORD, name: "x" })).toEqual({
+    expect(await activate({ email: A.manager.email, password: PASSWORD, name: "x" })).toEqual({
       ok: false,
       reason: "role",
     });
     await db.update(s.organizations).set({ active: false }).where(eq(s.organizations.id, A.org.id));
-    expect(await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "x" })).toEqual({
+    expect(await activate({ email: A.admin.email, password: PASSWORD, name: "x" })).toEqual({
       ok: false,
       reason: "inactive",
     });
@@ -52,7 +59,7 @@ describe("activar una PC", () => {
 
 describe("renovar", () => {
   it("renueva mientras el cliente siga activo; desactivado o revocado se niega", async () => {
-    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC" });
+    const a = await activate({ email: A.admin.email, password: PASSWORD, name: "PC" });
     if (!a.ok) throw new Error("no activó");
     const creds = { installationId: a.installationId, secret: a.secret! };
 
@@ -77,7 +84,7 @@ describe("renovar", () => {
 describe("resumen de la PC", () => {
   it("se guarda al activar y se actualiza al renovar", async () => {
     const stats = { orgNames: ["tacos richi"], restaurants: 1, tablets: 0, users: 2, responses30: 3, lastResponseAt: null };
-    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", stats });
+    const a = await activate({ email: A.admin.email, password: PASSWORD, name: "PC", stats });
     if (!a.ok) throw new Error("no activó");
     expect((await db.query.installations.findFirst())?.stats).toEqual(stats);
     await renewInstallation({ installationId: a.installationId, secret: a.secret!, stats: { ...stats, responses30: 9 } });
@@ -89,29 +96,44 @@ describe("la misma PC (llave de la PC)", () => {
   const deviceKey = "llave-de-la-pc-de-prueba-0123456789";
 
   it("vuelve a usar su instalación y un gerente entra solo si la PC ya está activada", async () => {
-    expect(await activateInstallation({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
+    expect(await activate({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
       ok: false,
       reason: "role",
     });
-    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
-    const b = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    const a = await activate({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    const b = await activate({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
     if (!a.ok || !b.ok) throw new Error("no activó");
     expect(b.installationId).toBe(a.installationId);
     expect(b.user).toMatchObject({ email: A.admin.email, role: "ADMIN" });
-    const m = await activateInstallation({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey });
+    const m = await activate({ email: A.manager.email, password: PASSWORD, name: "PC", deviceKey });
     expect(m.ok && m.user?.role).toBe("MANAGER");
     expect(await db.query.installations.findMany()).toHaveLength(1);
   });
 
   it("dada de baja no se reactiva al volver a entrar; reactivada en el hub sí", async () => {
-    const a = await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
+    const a = await activate({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey });
     if (!a.ok) throw new Error("no activó");
     await db.update(s.installations).set({ revokedAt: new Date() }).where(eq(s.installations.id, a.installationId));
-    expect(await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
+    expect(await activate({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).toEqual({
       ok: false,
       reason: "revoked",
     });
     await db.update(s.installations).set({ revokedAt: null }).where(eq(s.installations.id, a.installationId));
-    expect((await activateInstallation({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).ok).toBe(true);
+    expect((await activate({ email: A.admin.email, password: PASSWORD, name: "PC", deviceKey })).ok).toBe(true);
+  });
+});
+
+describe("modo Nube", () => {
+  it("no crea instalación: devuelve una entrada de un solo uso a la web, también para gerentes", async () => {
+    await db.update(s.organizations).set({ pcMode: "CLOUD" }).where(eq(s.organizations.id, A.org.id));
+    const r = await activateInstallation({
+      email: A.manager.email,
+      password: PASSWORD,
+      name: "PC",
+      baseUrl: "https://nube.test",
+    });
+    expect(r).toMatchObject({ ok: true, mode: "CLOUD", organizationName: "Tacos A" });
+    expect(r.ok && "loginUrl" in r && r.loginUrl).toMatch(/^https:\/\/nube\.test\/entrar\?t=[A-Za-z0-9_-]{43}$/);
+    expect(await db.query.installations.findMany()).toHaveLength(0);
   });
 });

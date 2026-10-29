@@ -26,6 +26,7 @@ import {
   listInstallations,
 } from "@/lib/queries/platform";
 import { LinkModal } from "../../link-modal";
+import { PcModePicker } from "./pc-mode";
 
 export const metadata = { title: "Cliente" };
 
@@ -97,6 +98,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           </ButtonLink>
         }
       />
+
+      <Section
+        title="Sobremesa en su PC"
+        description="Cómo funciona el .exe de este cliente. El cambio se aplica en su PC en unos minutos (o la siguiente vez que entre). Para pasar de «Solo en su PC» a «Nube» sin perder datos, primero ponlo en «PC sincronizada» y deja que suba todo."
+      >
+        <PcModePicker orgId={org.id} mode={org.pcMode} />
+      </Section>
 
       <Section title="Datos del cliente" description="Para saber a quién llamar. Solo los ve el equipo de Sobremesa.">
         <div className="panel p-5">
@@ -204,6 +212,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                     Activada por {pc.activatedByEmail} el {formatDateTime(pc.createdAt)} · última revisión{" "}
                     {formatDateTime(pc.lastSeenAt)}
                     {pc.revokedAt ? ` · dada de baja por ${pc.revokedByName} el ${formatDateTime(pc.revokedAt)}` : ""}
+                    {pc.lastSyncAt ? ` · última sincronización ${formatDateTime(pc.lastSyncAt)}` : ""}
                   </p>
                   {pc.stats ? (
                     <p className="mt-1.5 text-sm">

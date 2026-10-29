@@ -2,7 +2,15 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { installations, organizations, users, type InstallationStats, type UserRole } from "@/db/schema";
+import {
+  installations,
+  loginTokens,
+  organizations,
+  users,
+  type InstallationStats,
+  type PcMode,
+  type UserRole,
+} from "@/db/schema";
 import { randomToken, sha256 } from "./crypto";
 import { signLicense } from "./license-token";
 
@@ -21,9 +29,26 @@ export type LicenseGrant = {
   license: string;
   organizationId: string;
   organizationName: string;
-  user?: { name: string; email: string; role: UserRole };
+  /** Cómo usa la PC este cliente (lo elige la Administración). */
+  mode: PcMode;
+  user?: { id: string; name: string; email: string; role: UserRole };
 };
-export type LicenseResult = LicenseGrant | { ok: false; reason: LicenseFailure };
+/** Modo Nube: la PC no guarda nada; abre la web con una entrada de un solo uso. */
+export type CloudRedirect = { ok: true; mode: "CLOUD"; loginUrl: string; organizationId: string; organizationName: string };
+export type LicenseResult = LicenseGrant | CloudRedirect | { ok: false; reason: LicenseFailure };
+
+export const LOGIN_TOKEN_MINUTES = 2;
+
+/** Entrada de un solo uso a la web (modo Nube). La URL caduca en 2 minutos. */
+export async function createLoginUrl(baseUrl: string, userId: string) {
+  const token = randomToken(32);
+  await db.insert(loginTokens).values({
+    tokenHash: sha256(token),
+    userId,
+    expiresAt: new Date(Date.now() + LOGIN_TOKEN_MINUTES * 60 * 1000),
+  });
+  return `${baseUrl.replace(/\/$/, "")}/entrar?t=${token}`;
+}
 
 const DUMMY_HASH = bcrypt.hashSync("contraseña-ficticia", 10);
 
@@ -40,6 +65,8 @@ export async function activateInstallation(input: {
   deviceKey?: string | null;
   version?: string | null;
   stats?: InstallationStats | null;
+  /** URL pública de la nube, para la entrada del modo Nube. */
+  baseUrl?: string;
 }): Promise<LicenseResult> {
   const email = input.email.toLowerCase().trim();
   const user = await db.query.users.findFirst({ where: eq(users.email, email) });
@@ -48,6 +75,15 @@ export async function activateInstallation(input: {
   const org = await db.query.organizations.findFirst({ where: eq(organizations.id, user.organizationId) });
   if (!org || org.internal) return { ok: false, reason: "role" };
   if (!org.active) return { ok: false, reason: "inactive" };
+  if (org.pcMode === "CLOUD") {
+    return {
+      ok: true,
+      mode: "CLOUD",
+      loginUrl: await createLoginUrl(input.baseUrl ?? process.env.APP_URL ?? "", user.id),
+      organizationId: org.id,
+      organizationName: org.name,
+    };
+  }
 
   const deviceKeyHash = input.deviceKey ? sha256(`device:${input.deviceKey}`) : null;
   const previous = deviceKeyHash
@@ -58,8 +94,8 @@ export async function activateInstallation(input: {
     : undefined;
   if (previous?.revokedAt) return { ok: false, reason: "revoked" };
 
-  const who = { name: user.name, email: user.email, role: user.role };
-  const base = { organizationId: org.id, organizationName: org.name, user: who };
+  const who = { id: user.id, name: user.name, email: user.email, role: user.role };
+  const base = { organizationId: org.id, organizationName: org.name, mode: org.pcMode, user: who };
 
   if (previous) {
     await db
@@ -105,7 +141,7 @@ export async function renewInstallation(input: {
   secret: string;
   version?: string | null;
   stats?: InstallationStats | null;
-}): Promise<LicenseResult> {
+}): Promise<LicenseGrant | { ok: false; reason: LicenseFailure }> {
   const row = await db.query.installations.findFirst({
     where: and(eq(installations.id, input.installationId), eq(installations.secretHash, sha256(input.secret))),
     with: { organization: true },
@@ -131,5 +167,16 @@ export async function renewInstallation(input: {
     license,
     organizationId: row.organization.id,
     organizationName: row.organization.name,
+    mode: row.organization.pcMode,
   };
+}
+
+/** Instalación válida (no dada de baja) de un cliente activo, para sincronizar. */
+export async function authenticateInstallation(installationId: string, secret: string) {
+  const row = await db.query.installations.findFirst({
+    where: and(eq(installations.id, installationId), eq(installations.secretHash, sha256(secret))),
+    with: { organization: true },
+  });
+  if (!row || row.revokedAt || !row.organization.active) return null;
+  return row;
 }

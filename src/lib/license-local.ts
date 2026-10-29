@@ -11,6 +11,7 @@ import {
   restaurants,
   users,
   type InstallationStats,
+  type PcMode,
   type User,
   type UserRole,
 } from "@/db/schema";
@@ -19,6 +20,7 @@ import { randomToken } from "./crypto";
 import { LICENSE_CHECK_EVERY_MS, verifyLicense } from "./license-token";
 import { logger } from "./logger";
 import { getSetting, setSetting } from "./settings";
+import { applyChanges, exportChanges } from "./sync";
 
 /**
  * Lado PC de las licencias (versión instalada, APP_MODE=local).
@@ -109,6 +111,16 @@ export async function orgLicenseStatus(orgId: string): Promise<OrgLicenseStatus>
   return "expired";
 }
 
+function asMode(v: unknown): PcMode {
+  return v === "CLOUD" || v === "SYNC" ? v : "LOCAL";
+}
+
+/** Modo que eligió la Administración para esta cadena (llega con cada licencia). */
+export async function orgMode(orgId: string): Promise<PcMode | null> {
+  const lic = await db.query.orgLicenses.findFirst({ where: eq(orgLicenses.organizationId, orgId), columns: { mode: true } });
+  return lic?.mode ?? null;
+}
+
 /** Pide a la nube la licencia nueva de una cadena. Sin internet no cambia nada. */
 export async function renewOrgLicense(orgId: string): Promise<"ok" | "offline" | "inactive" | "revoked" | "none"> {
   const lic = await db.query.orgLicenses.findFirst({ where: eq(orgLicenses.organizationId, orgId) });
@@ -124,7 +136,7 @@ export async function renewOrgLicense(orgId: string): Promise<"ok" | "offline" |
     if (status === 200 && typeof data.license === "string") {
       await db
         .update(orgLicenses)
-        .set({ token: data.license, block: null, updatedAt: new Date() })
+        .set({ token: data.license, block: null, mode: asMode(data.mode), updatedAt: new Date() })
         .where(eq(orgLicenses.organizationId, orgId));
       if (typeof data.organizationName === "string") {
         await db.update(organizations).set({ name: data.organizationName }).where(eq(organizations.id, orgId));
@@ -159,18 +171,108 @@ export async function orgAllowed(orgId: string): Promise<boolean> {
   const lic = await db.query.orgLicenses.findFirst({ where: eq(orgLicenses.organizationId, orgId) });
   const since = lic?.lastCheckAt ? Date.now() - lic.lastCheckAt.getTime() : Infinity;
   if (status === "valid") {
-    if (since > LICENSE_CHECK_EVERY_MS) {
-      await db.update(orgLicenses).set({ lastCheckAt: new Date() }).where(eq(orgLicenses.organizationId, orgId));
+    const renew = since > LICENSE_CHECK_EVERY_MS;
+    const sinceSync = lic?.lastSyncAt ? Date.now() - lic.lastSyncAt.getTime() : Infinity;
+    const sync = lic?.mode === "SYNC" && sinceSync > SYNC_EVERY_MS && !syncing.has(orgId);
+    if (renew || sync) {
+      if (renew) await db.update(orgLicenses).set({ lastCheckAt: new Date() }).where(eq(orgLicenses.organizationId, orgId));
+      const job = async () => {
+        if (renew) await renewOrgLicense(orgId);
+        if ((await orgMode(orgId)) === "SYNC") await syncOrg(orgId);
+      };
       try {
-        after(() => renewOrgLicense(orgId));
+        after(job);
       } catch {
-        void renewOrgLicense(orgId);
+        void job();
       }
     }
-    return true;
+    // Modo Nube: esta cadena no opera en la PC (se usa la web).
+    return lic?.mode !== "CLOUD";
   }
-  if (since > 60 * 1000) return (await renewOrgLicense(orgId)) === "ok";
+  if (since > 60 * 1000) return (await renewOrgLicense(orgId)) === "ok" && (await orgMode(orgId)) !== "CLOUD";
   return false;
+}
+
+// ───────────────────────── Sincronización (modo SYNC) ─────────────────────────
+
+const SYNC_EVERY_MS = 60 * 1000;
+const syncing = new Set<string>();
+
+export type SyncOutcome = { ok: true; pushed: number; pulled: number; skipped: number } | { ok: false; error: string };
+
+/**
+ * Sincroniza una cadena con la nube: sube lo que cambió en la PC y baja lo que cambió en la nube,
+ * por tandas, hasta ponerse al día (o hasta 20 tandas por vuelta). Sin internet no pasa nada:
+ * se reintenta en la siguiente vuelta.
+ */
+export async function syncOrg(orgId: string): Promise<SyncOutcome> {
+  if (syncing.has(orgId)) return { ok: false, error: "Ya se está sincronizando." };
+  syncing.add(orgId);
+  let pushed = 0;
+  let pulled = 0;
+  let skipped = 0;
+  try {
+    for (let round = 0; round < 20; round++) {
+      const lic = await db.query.orgLicenses.findFirst({ where: eq(orgLicenses.organizationId, orgId) });
+      if (!lic || lic.mode !== "SYNC" || lic.block) return { ok: false, error: "Esta cadena no está en modo sincronizado." };
+      const push = await exportChanges(orgId, toNumbers(lic.syncPushed));
+      const { status, data } = await postJson("/api/sync", {
+        installationId: lic.installationId,
+        secret: lic.secret,
+        push: { tables: push.tables, deletions: push.deletions },
+        pulled: toNumbers(lic.syncPulled),
+      });
+      if (status === 409 && typeof data.mode === "string") {
+        await db
+          .update(orgLicenses)
+          .set({ mode: asMode(data.mode) })
+          .where(eq(orgLicenses.organizationId, orgId));
+        return { ok: false, error: "La Administración cambió el modo de este negocio." };
+      }
+      if (status !== 200) throw new Error(typeof data.error === "string" ? data.error : `HTTP ${status}`);
+      const incoming = data as unknown as {
+        tables: Record<string, Record<string, unknown>[]>;
+        deletions: { table: string; key: string }[];
+        cursors: Record<string, number>;
+        more: boolean;
+        skipped?: unknown[];
+      };
+      const applied = await applyChanges(orgId, incoming, "pc");
+      pushed += Object.values(push.tables).reduce((a, r) => a + r.length, 0) + push.deletions.length;
+      pulled += applied.applied;
+      skipped += applied.skipped.length + (Array.isArray(incoming.skipped) ? incoming.skipped.length : 0);
+      await db
+        .update(orgLicenses)
+        .set({
+          syncPushed: toStrings(push.cursors),
+          syncPulled: toStrings(incoming.cursors),
+          lastSyncAt: new Date(),
+          lastSyncError: skipped ? `${skipped} cambios no se pudieron aplicar (datos repetidos en otra cadena).` : null,
+        })
+        .where(eq(orgLicenses.organizationId, orgId));
+      if (!push.more && !incoming.more) break;
+    }
+    return { ok: true, pushed, pulled, skipped };
+  } catch (e) {
+    const err = e as Error;
+    const error =
+      err.name === "TimeoutError" || /fetch|ECONN|network/i.test(err.message) ? "Sin conexión con la nube." : err.message;
+    await db
+      .update(orgLicenses)
+      .set({ lastSyncAt: new Date(), lastSyncError: error })
+      .where(eq(orgLicenses.organizationId, orgId));
+    logger.warn("sync.failed", { orgId, error });
+    return { ok: false, error };
+  } finally {
+    syncing.delete(orgId);
+  }
+}
+
+function toNumbers(v: Record<string, string> | null | undefined) {
+  return Object.fromEntries(Object.entries(v ?? {}).map(([k, n]) => [k, Number(n) || 0]));
+}
+function toStrings(v: Record<string, number>) {
+  return Object.fromEntries(Object.entries(v).map(([k, n]) => [k, String(n)]));
 }
 
 export async function restaurantAllowed(restaurantId: string) {
@@ -189,7 +291,7 @@ export async function surveyAllowed(surveyId: string) {
 
 // ───────────────────────── Inicio de sesión en la PC ─────────────────────────
 
-export type LocalLoginResult = { ok: true; user: User } | { ok: false; error: string };
+export type LocalLoginResult = { ok: true; user: User } | { ok: false; error: string } | { ok: "redirect"; url: string };
 
 const MESSAGES = {
   credentials: "Correo o contraseña incorrectos. Usa la cuenta de tu negocio en Sobremesa (la misma de la web).",
@@ -221,6 +323,18 @@ export async function localLogin(email: string, password: string): Promise<Local
       deviceKey: await deviceKey(),
       version: process.env.APP_VERSION ?? null,
     });
+    if (status === 200 && data.mode === "CLOUD" && typeof data.loginUrl === "string") {
+      // Modo Nube: la cadena (si ya estaba en la PC) deja de operar aquí, y se abre la web.
+      if (typeof data.organizationId === "string") {
+        const org = await db.query.organizations.findFirst({
+          where: eq(organizations.cloudOrgId, data.organizationId),
+          columns: { id: true },
+        });
+        if (org) await db.update(orgLicenses).set({ mode: "CLOUD" }).where(eq(orgLicenses.organizationId, org.id));
+      }
+      await setSetting("cloud_home", "1");
+      return { ok: "redirect", url: data.loginUrl };
+    }
     if (status === 200 && typeof data.license === "string") {
       const user = await bindCloudAccount(
         data as {
@@ -229,17 +343,22 @@ export async function localLogin(email: string, password: string): Promise<Local
           secret?: string;
           organizationId: string;
           organizationName: string;
-          user?: { name: string; role: UserRole };
+          mode?: string;
+          user?: { id?: string; name: string; role: UserRole };
         },
         email,
         password,
       );
       if (user) {
-        // Que la Administración vea de una vez lo que hay en esta PC para ese cliente.
+        // Que la Administración vea de una vez lo que hay en esta PC (y, si sincroniza, que se ponga al día).
+        const job = async () => {
+          await renewOrgLicense(user.organizationId);
+          if ((await orgMode(user.organizationId)) === "SYNC") await syncOrg(user.organizationId);
+        };
         try {
-          after(() => renewOrgLicense(user.organizationId));
+          after(job);
         } catch {
-          void renewOrgLicense(user.organizationId);
+          void job();
         }
         return { ok: true, user };
       }
@@ -287,7 +406,8 @@ async function bindCloudAccount(
     secret?: string;
     organizationId: string;
     organizationName: string;
-    user?: { name: string; role: UserRole };
+    mode?: string;
+    user?: { id?: string; name: string; role: UserRole };
   },
   email: string,
   password: string,
@@ -309,9 +429,10 @@ async function bindCloudAccount(
           .returning();
       }
     } else {
+      // Mismo id que en la nube: así los datos sincronizados son los mismos en los dos lados.
       [org] = await tx
         .insert(organizations)
-        .values({ name: grant.organizationName, cloudOrgId: grant.organizationId })
+        .values({ id: grant.organizationId, name: grant.organizationName, cloudOrgId: grant.organizationId })
         .returning();
     }
 
@@ -325,6 +446,7 @@ async function bindCloudAccount(
         installationId: grant.installationId,
         secret,
         token: grant.license,
+        mode: asMode(grant.mode),
         lastCheckAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -334,6 +456,7 @@ async function bindCloudAccount(
           secret,
           token: grant.license,
           block: null,
+          mode: asMode(grant.mode),
           lastCheckAt: new Date(),
           updatedAt: new Date(),
         },
@@ -341,7 +464,13 @@ async function bindCloudAccount(
 
     const role: UserRole = grant.user?.role ?? "ADMIN";
     const name = grant.user?.name || email.split("@")[0];
-    const local = await tx.query.users.findFirst({ where: eq(users.email, email) });
+    let local = await tx.query.users.findFirst({ where: eq(users.email, email) });
+    // La cuenta en la PC lleva el mismo id que en la nube (para que la sincronización la reconozca).
+    const cloudId = grant.user?.id;
+    if (local && cloudId && local.id !== cloudId) {
+      await tx.delete(users).where(eq(users.id, local.id));
+      local = undefined;
+    }
     if (local) {
       const [u] = await tx
         .update(users)
@@ -352,7 +481,15 @@ async function bindCloudAccount(
     }
     const [u] = await tx
       .insert(users)
-      .values({ organizationId: org.id, name, email, passwordHash, role, notifyLowScores: role === "ADMIN" })
+      .values({
+        ...(cloudId ? { id: cloudId } : {}),
+        organizationId: org.id,
+        name,
+        email,
+        passwordHash,
+        role,
+        notifyLowScores: role === "ADMIN",
+      })
       .returning();
     return u;
   });

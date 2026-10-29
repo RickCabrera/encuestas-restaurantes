@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { demoRequests, installations, organizations, payments, users, type DemoRequestStatus } from "@/db/schema";
+import { demoRequests, installations, organizations, payments, users, type DemoRequestStatus, type PcMode } from "@/db/schema";
 import { billingStatus, periodOf, type BillingStatus } from "@/lib/billing";
 import { APP_TIMEZONE, dayInTz } from "@/lib/dates";
 
@@ -19,6 +19,7 @@ export type ClientRow = {
   responses30: number;
   lastResponseAt: Date | null;
   /** PCs activas (el .exe) y lo que reportan: sus datos viven en cada PC, no en la nube. */
+  pcMode: PcMode;
   pcs: number;
   pcRestaurants: number;
   pcResponses30: number;
@@ -39,11 +40,12 @@ export async function listClients(opts: { id?: string } = {}): Promise<ClientRow
     users: number;
     responses30: number;
     last_response_at: Date | null;
+    pc_mode: PcMode;
     pcs: number;
     pc_restaurants: number;
     pc_responses30: number;
   }>(sql`
-    select o.id, o.name, o.active, o.created_at, o.billing_day, o.contact_name, o.contact_email,
+    select o.id, o.name, o.active, o.created_at, o.billing_day, o.pc_mode, o.contact_name, o.contact_email,
       (select count(*)::int from restaurants r where r.organization_id = o.id) as restaurants,
       (select count(*)::int from devices d join restaurants r on r.id = d.restaurant_id
          where r.organization_id = o.id and d.active and d.token_hash is not null) as tablets,
@@ -74,6 +76,7 @@ export async function listClients(opts: { id?: string } = {}): Promise<ClientRow
     users: Number(r.users),
     responses30: Number(r.responses30),
     lastResponseAt: r.last_response_at ? new Date(r.last_response_at) : null,
+    pcMode: r.pc_mode,
     pcs: Number(r.pcs),
     pcRestaurants: Number(r.pc_restaurants),
     pcResponses30: Number(r.pc_responses30),
