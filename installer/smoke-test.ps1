@@ -149,6 +149,9 @@ function Check-Running([bool]$IsUpdate) {
   $login = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/login'
   Check (-not $login.Headers.ContainsKey('Strict-Transport-Security')) 'Sin HSTS (modo local)'
   Check ($login.Headers.ContainsKey('Content-Security-Policy')) 'Con Content-Security-Policy'
+  # Sin licencia, el panel lleva a activar la PC con la cuenta del negocio en la nube.
+  $activar = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/admin'
+  Check ($activar.StatusCode -eq 200 -and $activar.Content -match 'Activar Sobremesa') 'Sin licencia, /admin lleva a Activar Sobremesa'
 
   $services = @{ SobremesaEncuestasDB = 'NT AUTHORITY\NetworkService'; SobremesaEncuestasApp = 'NT AUTHORITY\LocalService' }
   foreach ($name in $services.Keys) {
