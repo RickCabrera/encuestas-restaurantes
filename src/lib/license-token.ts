@@ -14,8 +14,11 @@ const AUDIENCE = "sobremesa-pc";
 
 /** Días que la PC puede seguir sin conectarse a la nube antes de bloquearse. */
 export const LICENSE_DAYS = 7;
-/** Cada cuánto intenta renovar la PC (si hay internet). */
-export const LICENSE_RENEW_AFTER_MS = 12 * 3600 * 1000;
+/**
+ * Cada cuánto revisa la PC con la nube mientras se usa (panel, tablets o QR). Así, desactivar al
+ * cliente o dar de baja la PC surte efecto en minutos si la PC tiene internet.
+ */
+export const LICENSE_CHECK_EVERY_MS = 5 * 60 * 1000;
 
 export type LicenseClaims = {
   installationId: string;

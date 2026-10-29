@@ -115,7 +115,11 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
       <Section title="Restaurantes" description="Las sucursales que el cliente dio de alta en su panel.">
         {restaurants.length === 0 ? (
-          <div className="panel px-5 py-6 text-sm text-ink-soft">Todavía no da de alta restaurantes.</div>
+          <div className="panel px-5 py-6 text-sm text-ink-soft">
+            {pcs.some((p) => !p.revokedAt)
+              ? "En la web no tiene restaurantes: usa Sobremesa instalado en su PC. Lo que hay ahí se ve abajo, en «Instalaciones en PC»."
+              : "Todavía no da de alta restaurantes."}
+          </div>
         ) : (
           <ul className="panel divide-y divide-line-soft">
             {restaurants.map((r) => (
@@ -181,7 +185,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
       <Section
         title="Instalaciones en PC"
-        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó con la cuenta del negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en su siguiente revisión (o, sin internet, en máximo 7 días)."
+        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó con la cuenta del negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en unos minutos (o, si la PC no tiene internet, en máximo 7 días)."
       >
         {pcs.length === 0 ? (
           <div className="panel px-5 py-6 text-sm text-ink-soft">No tiene ninguna PC activada.</div>
@@ -200,6 +204,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                     {formatDateTime(pc.lastSeenAt)}
                     {pc.revokedAt ? ` · dada de baja por ${pc.revokedByName} el ${formatDateTime(pc.revokedAt)}` : ""}
                   </p>
+                  {pc.stats ? (
+                    <p className="mt-1.5 text-sm">
+                      <strong>En esta PC:</strong> {pc.stats.orgNames.join(", ") || "sin cadena"} · {pc.stats.restaurants}{" "}
+                      {pc.stats.restaurants === 1 ? "restaurante" : "restaurantes"} · {pc.stats.tablets} tablets ·{" "}
+                      {pc.stats.users} usuarios · {pc.stats.responses30} respuestas en 30 días
+                      {pc.stats.lastResponseAt ? ` · última ${formatDateTime(new Date(pc.stats.lastResponseAt))}` : ""}
+                    </p>
+                  ) : null}
                 </div>
                 {pc.revokedAt ? null : (
                   <form action={revokeInstallationAction.bind(null, pc.id)}>

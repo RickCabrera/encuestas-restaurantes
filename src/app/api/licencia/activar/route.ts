@@ -9,11 +9,23 @@ import { ipFromRequest } from "@/lib/request";
 
 export const dynamic = "force-dynamic";
 
+const statsSchema = z
+  .object({
+    orgNames: z.array(z.string().max(100)).max(20),
+    restaurants: z.number().int().min(0).max(100000),
+    tablets: z.number().int().min(0).max(100000),
+    users: z.number().int().min(0).max(100000),
+    responses30: z.number().int().min(0).max(10000000),
+    lastResponseAt: z.string().max(40).nullable(),
+  })
+  .nullish();
+
 const body = z.object({
   email: z.string().max(200),
   password: z.string().max(200),
   name: z.string().max(200).default("PC"),
   version: z.string().max(50).nullish(),
+  stats: statsSchema,
 });
 
 /** Activa una instalación en PC (el .exe) con la cuenta de administrador del negocio. Solo en la nube. */

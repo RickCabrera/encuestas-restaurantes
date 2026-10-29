@@ -9,8 +9,16 @@ on:
   push:
     branches: [main, instalador-pc]
     tags: ["pc-v*"]
+    # El Setup.exe empaqueta la app completa: se vuelve a armar también cuando cambia ella.
     paths:
       - "installer/**"
+      - "src/**"
+      - "drizzle/**"
+      - "public/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.ts"
       - ".github/workflows/instalador-pc.yml"
 
 concurrency:
