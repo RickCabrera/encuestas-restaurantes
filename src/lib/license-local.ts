@@ -1,7 +1,7 @@
 import "server-only";
 import { hostname } from "node:os";
 import { inArray } from "drizzle-orm";
-import { after } from "next/server";
+import { after, connection } from "next/server";
 import { db } from "@/db";
 import { appSettings } from "@/db/schema";
 import { isLocalMode } from "./app-mode";
@@ -138,6 +138,8 @@ export async function activateLicense(email: string, password: string): Promise<
  */
 export async function licenseAllows(): Promise<boolean> {
   if (!isLocalMode()) return true;
+  // Depende de la base en cada petición: que Next no intente prerenderizar la página al compilar.
+  await connection();
   const state = await getLicenseState();
   const lastTry = Number((await getSetting(K.lastTry)) ?? 0);
   if (state.status === "valid") {
