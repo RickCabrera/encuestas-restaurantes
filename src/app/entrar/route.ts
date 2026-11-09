@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const goTo = (path: string) => new Response(null, { status: 303, headers: { Location: path, "Cache-Control": "no-store" } });
 
 /**
- * Entrada de un solo uso desde Sobremesa instalado en PC (modo Nube): la PC ya validó el correo y
+ * Entrada de un solo uso desde Cuéntanos instalado en PC (modo Nube): la PC ya validó el correo y
  * la contraseña contra la nube; aquí se abre la sesión de la web y se va al panel. Solo en la nube.
  */
 export async function GET(request: Request) {

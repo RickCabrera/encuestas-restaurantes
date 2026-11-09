@@ -19,7 +19,7 @@ function sameKey(given: string | null, expected: string | undefined) {
 }
 
 /**
- * Puerta de entrada del acceso directo "Sobremesa Encuestas" en la versión instalada en PC
+ * Puerta de entrada del acceso directo "Cuéntanos" en la versión instalada en PC
  * (docs/INSTALAR-PC.md): lleva al login, donde se entra con la cuenta del negocio en la nube.
  *
  * Solo existe con APP_MODE=local, para peticiones desde la propia PC y con la llave que el

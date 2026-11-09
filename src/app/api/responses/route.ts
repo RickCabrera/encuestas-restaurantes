@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const parsed = submitSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   if (!(await surveyAllowed(parsed.data.surveyId))) {
-    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Sobremesa." }, { status: 402 });
+    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Cuéntanos." }, { status: 402 });
   }
 
   const hasToken = req.headers.get("authorization")?.startsWith("Bearer ");

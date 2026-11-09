@@ -8,7 +8,7 @@ export type SessionUser = Pick<
   "id" | "name" | "email" | "role" | "notifyLowScores" | "organizationId" | "platformAdmin"
 > & {
   organizationName: string;
-  /** Cadena del equipo de Sobremesa: sus cuentas solo usan la Administración, no el panel de un negocio. */
+  /** Cadena del equipo de Cuéntanos: sus cuentas solo usan la Administración, no el panel de un negocio. */
   organizationInternal: boolean;
   /**
    * Restaurantes que puede ver: todos los de su cadena (admin) o los que tiene asignados (gerente).

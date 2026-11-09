@@ -68,7 +68,7 @@ function Add-Button([string]$Text, [scriptblock]$OnClick) {
 }
 
 # Sin usuarios, el lanzador lleva directo a crear la cadena: nadie copia ni pega enlaces.
-if ($data -and $data.inviteLink) { Add-MainButton 'Activar Sobremesa' } else { Add-MainButton 'Abrir Sobremesa Encuestas' }
+if ($data -and $data.inviteLink) { Add-MainButton 'Activar Cuéntanos' } else { Add-MainButton 'Abrir Cuéntanos' }
 if ($data -and $data.tabletUrl) {
   Add-Button 'Copiar dirección de las tablets' { [System.Windows.Forms.Clipboard]::SetText($data.tabletUrl) }
 }

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { clearRateLimits, login } from "./helpers";
 
 const DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/encuestas_e2e";
-const PLATFORM = { email: "equipo@sobremesa.test", password: "Plataforma123!" };
+const PLATFORM = { email: "equipo@cuentanos.test", password: "Plataforma123!" };
 
 test.beforeAll(() => {
   execSync(`npx tsx scripts/platform-admin.ts ${PLATFORM.email} "Equipo E2E" "${PLATFORM.password}"`, {

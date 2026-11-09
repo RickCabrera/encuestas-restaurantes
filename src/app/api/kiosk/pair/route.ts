@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   });
   if (!device) return NextResponse.json({ error: "Código incorrecto o vencido. Genera uno nuevo en el panel." }, { status: 404 });
   if (!(await restaurantAllowed(device.restaurantId))) {
-    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Sobremesa." }, { status: 402 });
+    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Cuéntanos." }, { status: 402 });
   }
 
   const token = randomToken();

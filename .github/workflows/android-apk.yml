@@ -76,7 +76,7 @@ jobs:
           build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$build_tools/apksigner" verify --print-certs "$apk"
           version=$("$build_tools/aapt2" dump badging "$apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
-          out="sobremesa-tablet-$version-$VERSION_CODE.apk"
+          out="cuentanos-tablet-$version-$VERSION_CODE.apk"
           mkdir -p dist
           cp "$apk" "dist/$out"
           (cd dist && sha256sum "$out" > "$out.sha256" && cat "$out.sha256")

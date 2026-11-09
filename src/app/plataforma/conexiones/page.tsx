@@ -78,7 +78,7 @@ export default async function ConnectionsPage() {
     <>
       <PageHeader
         title="Conexiones"
-        description="Los servicios externos que Sobremesa necesita. Cada uno se configura con variables de entorno en Railway y se aplica al volver a desplegar."
+        description="Los servicios externos que Cuéntanos necesita. Cada uno se configura con variables de entorno en Railway y se aplica al volver a desplegar."
       />
       <div className="space-y-4">
         <Card title="Base de datos" ok={info.ok} status={info.ok ? "PostgreSQL" : "Sin conexión"}>

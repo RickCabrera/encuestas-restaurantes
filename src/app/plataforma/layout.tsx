@@ -6,7 +6,7 @@ import { PlatformSidebar } from "./sidebar";
 
 export const metadata = { title: { default: "Administración", template: "%s · Administración" } };
 
-/** Administración de la plataforma: solo para el equipo que opera Sobremesa. */
+/** Administración de la plataforma: solo para el equipo que opera Cuéntanos. */
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePlatformAdmin();
   const counts = await demoRequestCounts();

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-/** Marca de Sobremesa: un globo de conversación con una estrella, sobre el color de acento. */
+/** Marca de Cuéntanos: un globo de conversación con una estrella, sobre el color de acento. */
 export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
   return (
     <span
@@ -48,7 +48,7 @@ export function Logo({
           className={cn("block font-display font-bold tracking-[-0.02em]", tone === "light" ? "text-white" : "text-ink")}
           style={{ fontSize: size * 0.62 }}
         >
-          Sobremesa
+          Cuéntanos
         </span>
         {subtitle ? (
           <span

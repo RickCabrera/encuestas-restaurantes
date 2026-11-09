@@ -20,7 +20,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader
         title="Clientes"
-        description="Los negocios que usan Sobremesa."
+        description="Los negocios que usan Cuéntanos."
         actions={
           <LinkModal
             action={createClientInviteAction}

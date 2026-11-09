@@ -65,7 +65,7 @@ export function DemoForm() {
         <SubmitButton size="lg" className="w-full" pendingText="Enviando…">
           Pedir demo
         </SubmitButton>
-        <p className="text-[13px] text-ink-faint">Usamos tus datos solo para contactarte sobre Sobremesa. Nada de spam.</p>
+        <p className="text-[13px] text-ink-faint">Usamos tus datos solo para contactarte sobre Cuéntanos. Nada de spam.</p>
       </div>
     </form>
   );

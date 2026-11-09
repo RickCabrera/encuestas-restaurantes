@@ -1,6 +1,6 @@
-/* Administrador de la plataforma (/plataforma), el equipo que opera Sobremesa.
+/* Administrador de la plataforma (/plataforma), el equipo que opera Cuéntanos.
  *
- *   npm run platform-admin -- correo@sobremesa.mx "Nombre" "Contraseña"
+ *   npm run platform-admin -- correo@cuentanos.com.mx "Nombre" "Contraseña"
  *     Crea la cuenta (o, si el correo ya existe, la hace administrador y le pone esa contraseña).
  *
  *   npm run platform-admin            (sin argumentos, lo usa el despliegue en Railway)

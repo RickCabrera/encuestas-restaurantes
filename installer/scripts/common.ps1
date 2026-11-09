@@ -2,7 +2,7 @@
 # Corre en Windows PowerShell 5.1, que es el que trae Windows.
 $ErrorActionPreference = 'Stop'
 
-$AppName = 'Sobremesa Encuestas'
+$AppName = 'Cuéntanos'
 $AppPort = 3000
 
 # Programa: se reemplaza en cada actualización.
@@ -30,7 +30,7 @@ $PowerStateFile = Join-Path $DataDir 'energia-anterior.json'
 $DbService = 'SobremesaEncuestasDB'
 $AppService = 'SobremesaEncuestasApp'
 $FirewallRule = 'SobremesaEncuestas-HTTP'
-$BackupTask = 'Sobremesa Encuestas - Respaldo diario'
+$BackupTask = 'Cuéntanos - Respaldo diario'
 
 $PowerShellExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
@@ -143,7 +143,7 @@ function Read-EnvFile([string]$Path = $EnvFile) {
 # Sin BOM: `node --env-file` no lo entiende. Escribir sobre el archivo conserva sus permisos.
 function Write-EnvFile($Values, [string]$Path = $EnvFile) {
   $lines = @(
-    '# Sobremesa Encuestas: configuración de ESTA PC. La crea el instalador y las actualizaciones la conservan.',
+    '# Cuéntanos: configuración de ESTA PC. La crea el instalador y las actualizaciones la conservan.',
     '# No la copies a otra PC ni la compartas: trae el secreto de las sesiones y la contraseña de la base.'
   )
   foreach ($key in $Values.Keys) { $lines += "$key=$($Values[$key])" }
@@ -286,12 +286,12 @@ function Update-ListoPage([string]$InviteLink = '') {
   }
 
   if ($InviteLink) {
-    $invite = '<h2>3. Activa Sobremesa con tu cuenta</h2>' +
-      '<p>Toca el botón <strong>Activar Sobremesa</strong>, aquí abajo, y entra con el correo y la contraseña de la cuenta de tu negocio en la web de Sobremesa (la que te dimos al contratar). Esta PC necesita internet para activarse y para renovar su licencia una vez al día; sin internet sigue funcionando hasta 7 días.</p>' +
+    $invite = '<h2>3. Activa Cuéntanos con tu cuenta</h2>' +
+      '<p>Toca el botón <strong>Activar Cuéntanos</strong>, aquí abajo, y entra con el correo y la contraseña de la cuenta de tu negocio en la web de Cuéntanos (la que te dimos al contratar). Esta PC necesita internet para activarse y para renovar su licencia una vez al día; sin internet sigue funcionando hasta 7 días.</p>' +
       '<p class="note">Otra forma, desde otro equipo de la misma red: abre este enlace. Sirve una sola vez y vence en 7 días.<br /><span class="link">' + (ConvertTo-Html $InviteLink) + '</span></p>'
   } else {
-    $invite = '<h2>3. Entra con tu cuenta de Sobremesa</h2>' +
-      '<p>Toca el botón <strong>Abrir Sobremesa Encuestas</strong>, aquí abajo, o usa el icono del Escritorio, y entra con el correo y la contraseña de la cuenta de tu negocio en Sobremesa (la misma de la web). La primera vez esta PC necesita internet; después sigue funcionando hasta 7 días sin internet.</p>'
+    $invite = '<h2>3. Entra con tu cuenta de Cuéntanos</h2>' +
+      '<p>Toca el botón <strong>Abrir Cuéntanos</strong>, aquí abajo, o usa el icono del Escritorio, y entra con el correo y la contraseña de la cuenta de tu negocio en Cuéntanos (la misma de la web). La primera vez esta PC necesita internet; después sigue funcionando hasta 7 días sin internet.</p>'
   }
 
   $template = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'listo.template.html'), [System.Text.Encoding]::UTF8)

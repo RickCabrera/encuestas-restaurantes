@@ -1,6 +1,6 @@
 # Instalar en una PC del restaurante (Windows)
 
-`SobremesaEncuestas-Setup-X.Y.Z.exe` instala el sistema completo en una PC con Windows: la aplicación, su base de datos PostgreSQL y los respaldos. Las tablets y el panel se conectan a esa PC por la red local, en `http://IP-de-la-PC:3000`. No necesita internet para funcionar.
+`Cuentanos-Setup-X.Y.Z.exe` instala el sistema completo en una PC con Windows: la aplicación, su base de datos PostgreSQL y los respaldos. Las tablets y el panel se conectan a esa PC por la red local, en `http://IP-de-la-PC:3000`. No necesita internet para funcionar.
 
 Es una alternativa a la versión en la nube ([DEPLOY.md](DEPLOY.md)), que no cambia.
 
@@ -22,16 +22,16 @@ Es una alternativa a la versión en la nube ([DEPLOY.md](DEPLOY.md)), que no cam
 
 ## 1. Conseguir el instalador
 
-En GitHub: **Actions → Instalador PC → la corrida más reciente → Artifacts**. Descarga `SobremesaEncuestas-Setup-X.Y.Z` y descomprime el `.zip`: trae el `Setup.exe` y un archivo `.sha256`.
+En GitHub: **Actions → Instalador PC → la corrida más reciente → Artifacts**. Descarga `Cuentanos-Setup-X.Y.Z` y descomprime el `.zip`: trae el `Setup.exe` y un archivo `.sha256`.
 
-El workflow corre con cada cambio en `installer/` y también con **Run workflow**. Para una versión con número propio, crea un tag: `git tag pc-v1.2.0 && git push origin pc-v1.2.0` genera `SobremesaEncuestas-Setup-1.2.0.exe`. Sin tag, la versión es `1.0.<número de corrida>`.
+El workflow corre con cada cambio en `installer/` y también con **Run workflow**. Para una versión con número propio, crea un tag: `git tag pc-v1.2.0 && git push origin pc-v1.2.0` genera `Cuentanos-Setup-1.2.0.exe`. Sin tag, la versión es `1.0.<número de corrida>`.
 
 Antes de entregar el instalador, el workflow lo prueba en una máquina limpia: instala, actualiza encima, respalda, restaura, desinstala y reinstala.
 
 Para comprobar que el archivo no se dañó al copiarlo, compara el resultado de este comando con el contenido del `.sha256`:
 
 ```powershell
-Get-FileHash .\SobremesaEncuestas-Setup-1.2.0.exe -Algorithm SHA256
+Get-FileHash .\Cuentanos-Setup-1.2.0.exe -Algorithm SHA256
 ```
 
 ## 2. Instalar
@@ -40,10 +40,10 @@ Get-FileHash .\SobremesaEncuestas-Setup-1.2.0.exe -Algorithm SHA256
 2. **Aviso de SmartScreen.** Windows muestra "Windows protegió su PC" porque el instalador no tiene firma de código (un certificado de pago). Toca **Más información** y luego **Ejecutar de todas formas**. Si el botón no aparece, haz clic derecho en el archivo → **Propiedades** → marca **Desbloquear** → **Aceptar**, y ábrelo otra vez. Algún antivirus puede pedir una confirmación parecida.
 3. Acepta el aviso de permisos de administrador y sigue el asistente. La configuración tarda de uno a tres minutos.
 4. La última pantalla trae marcadas dos casillas. Déjalas así y toca **Finalizar**:
-   - **Abrir Sobremesa Encuestas** abre el sistema en su propia ventana. La primera vez te lleva directo a crear tu cadena y tu usuario maestro: escribes el nombre de la cadena, tu nombre, tu correo y una contraseña. No hay que copiar ningún enlace.
+   - **Abrir Cuéntanos** abre el sistema en su propia ventana. La primera vez te lleva directo a crear tu cadena y tu usuario maestro: escribes el nombre de la cadena, tu nombre, tu correo y una contraseña. No hay que copiar ningún enlace.
    - **Ver los datos de la instalación** abre la página **Listo**, con la dirección para las tablets.
 
-El instalador deja el icono **Sobremesa Encuestas** en el Escritorio y en el menú Inicio (ver [Abrir el sistema](#abrir-el-sistema)).
+El instalador deja el icono **Cuéntanos** en el Escritorio y en el menú Inicio (ver [Abrir el sistema](#abrir-el-sistema)).
 
 Lo que hace el instalador:
 
@@ -60,15 +60,15 @@ Muestra la versión instalada y:
 
 1. **La IP de la PC** en la red local.
 2. **La dirección que se escribe en las tablets**, por ejemplo `http://192.168.1.50:3000`. Es también la dirección del panel desde otros equipos de la red. Hay un botón para copiarla, y el panel la repite en **Configuración → Tablets**.
-3. **El botón grande "Abrir Sobremesa Encuestas"**: lleva al login, donde se entra con el correo y la contraseña de la cuenta del negocio en la web de Sobremesa (ver "Licencia de la PC", más abajo). Ya no hay enlace de alta: las cadenas vienen de la nube.
+3. **El botón grande "Abrir Cuéntanos"**: lleva al login, donde se entra con el correo y la contraseña de la cuenta del negocio en la web de Cuéntanos (ver "Licencia de la PC", más abajo). Ya no hay enlace de alta: las cadenas vienen de la nube.
 
-La página solo la pueden leer los administradores de Windows; por eso se abre en una ventana propia y no en el navegador. Para verla de nuevo: menú Inicio → **Sobremesa Encuestas → Datos de la instalación (Listo)**.
+La página solo la pueden leer los administradores de Windows; por eso se abre en una ventana propia y no en el navegador. Para verla de nuevo: menú Inicio → **Cuéntanos → Datos de la instalación (Listo)**.
 
 El panel muestra la versión instalada al pie del menú lateral.
 
 ## Abrir el sistema
 
-Doble clic en **Sobremesa Encuestas**, en el Escritorio o en el menú Inicio. No pide permisos de administrador.
+Doble clic en **Cuéntanos**, en el Escritorio o en el menú Inicio. No pide permisos de administrador.
 
 - Se abre en una ventana propia, sin pestañas ni barra de direcciones (usa Microsoft Edge; si la PC no tiene Edge, abre el navegador predeterminado).
 - Si todavía no hay ningún usuario, lleva a crear la cadena y el usuario maestro. Si ya hay, a iniciar sesión.
@@ -168,7 +168,7 @@ Se conservan las 14 más recientes. La carpeta solo la pueden abrir los administ
 Para hacer un respaldo en el momento, en PowerShell como administrador:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "C:\Program Files\Sobremesa Encuestas\tools\backup.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Program Files\Cuéntanos\tools\backup.ps1"
 ```
 
 ### Restaurar un respaldo
@@ -176,7 +176,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Program Files\Sobremesa Encuestas\t
 Reemplaza el contenido actual de la base por el del respaldo. En PowerShell como administrador:
 
 ```powershell
-$programa = "C:\Program Files\Sobremesa Encuestas"
+$programa = "C:\Program Files\Cuéntanos"
 $datos = "C:\ProgramData\SobremesaEncuestas"
 $respaldo = "$datos\backups\encuestas-AAAAMMDD-HHMMSS.dump"   # el archivo que quieres restaurar
 
@@ -193,7 +193,7 @@ Start-Service SobremesaEncuestasApp
 ### Mudarse a otra PC
 
 1. Copia a una USB el respaldo más reciente de la PC vieja.
-2. Instala Sobremesa Encuestas en la PC nueva.
+2. Instala Cuéntanos en la PC nueva.
 3. Restaura el respaldo con los pasos de arriba.
 4. Dale a la PC nueva la IP de la vieja (reserva en el router) y apaga la vieja. Así las tablets y los QR siguen funcionando sin cambios.
 
@@ -201,11 +201,11 @@ Los usuarios tendrán que iniciar sesión otra vez; las tablets siguen vinculada
 
 ## Accesos directos
 
-En el menú Inicio, carpeta **Sobremesa Encuestas**. El primero es el de todos los días y no pide permisos; los demás son de mantenimiento y piden permisos de administrador de Windows.
+En el menú Inicio, carpeta **Cuéntanos**. El primero es el de todos los días y no pide permisos; los demás son de mantenimiento y piden permisos de administrador de Windows.
 
 | Acceso directo                              | Para qué                                                                                                                                       |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sobremesa Encuestas**                     | Abre el sistema en su propia ventana. También está en el Escritorio. Ver [Abrir el sistema](#abrir-el-sistema).                                |
+| **Cuéntanos**                               | Abre el sistema en su propia ventana. También está en el Escritorio. Ver [Abrir el sistema](#abrir-el-sistema).                                |
 | **Datos de la instalación (Listo)**         | La página "Listo": versión, IP, dirección para las tablets, avisos y el botón para crear la cadena.                                            |
 | **Restablecer contraseña de administrador** | Lista a los administradores del panel, pide el correo y la contraseña nueva (mínimo 8 caracteres). Cierra las sesiones abiertas de esa cuenta. |
 | **Actualizar la IP**                        | Pone en el sistema la IP actual de la PC. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia).                                           |
@@ -222,7 +222,7 @@ Para verlo o cambiarlo a mano: **Configuración → Sistema → Energía → Pan
 
 ## Desinstalar
 
-**Configuración → Aplicaciones → Sobremesa Encuestas → Desinstalar.** Pregunta si quieres **conservar los datos**:
+**Configuración → Aplicaciones → Cuéntanos → Desinstalar.** Pregunta si quieres **conservar los datos**:
 
 - **Sí** (recomendado): quita el programa, los servicios, la regla del firewall y el respaldo programado, pero deja la base, el `.env` y los respaldos en `C:\ProgramData\SobremesaEncuestas`. Si vuelves a instalar, todo sigue ahí.
 - **No**: pide una segunda confirmación y borra todo, incluidas las respuestas y los respaldos. No se puede deshacer.
@@ -233,15 +233,15 @@ En los dos casos se restaura la suspensión de la PC.
 
 | Qué                                   | Dónde                                                                                                             |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Programa (se reemplaza al actualizar) | `C:\Program Files\Sobremesa Encuestas\`                                                                           |
+| Programa (se reemplaza al actualizar) | `C:\Program Files\Cuéntanos\`                                                                                     |
 | Configuración y secretos de la PC     | `C:\ProgramData\SobremesaEncuestas\.env`                                                                          |
 | Base de datos                         | `C:\ProgramData\SobremesaEncuestas\pgdata\`                                                                       |
 | Respaldos                             | `C:\ProgramData\SobremesaEncuestas\backups\`                                                                      |
 | Bitácoras                             | `C:\ProgramData\SobremesaEncuestas\logs\` (`instalacion.log`, `respaldo.log`, las de cada servicio y `postgres\`) |
 | Servicio de la aplicación             | `SobremesaEncuestasApp`, puerto 3000, cuenta `LocalService`                                                       |
 | Servicio de la base                   | `SobremesaEncuestasDB`, cuenta `NetworkService`                                                                   |
-| Respaldo diario                       | Programador de tareas → `Sobremesa Encuestas - Respaldo diario`                                                   |
-| Regla del firewall                    | `Sobremesa Encuestas (puerto 3000)`, entrada, TCP 3000, perfil privado                                            |
+| Respaldo diario                       | Programador de tareas → `Cuéntanos - Respaldo diario`                                                             |
+| Regla del firewall                    | `Cuéntanos (puerto 3000)`, entrada, TCP 3000, perfil privado                                                      |
 | Llave del acceso directo              | `C:\ProgramData\SobremesaEncuestas\publico\llave-inicio.txt` (la leen los usuarios de la PC)                      |
 
 Seguridad:
@@ -258,7 +258,7 @@ Seguridad:
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | La tablet dice "No se pudo conectar con…" al guardar la dirección                   | Que esté en el mismo Wi-Fi que la PC, que la dirección lleve `http://` y `:3000`, y que la red de la PC esté como **Privada** ([sección 3](#3-poner-la-red-como-privada)). Algunos routers aíslan el Wi-Fi de invitados: no lo uses para las tablets.        |
 | Funcionaba y de pronto todas las tablets dicen "Sin conexión"                       | Que la PC esté encendida y despierta. Si la IP cambió, las tablets con la app 1.1 o posterior la encuentran solas en un par de minutos; **Datos de la instalación (Listo)** muestra la IP actual. Ver [Si la IP de la PC cambia](#si-la-ip-de-la-pc-cambia). |
-| El icono se queda en "Iniciando…" o dice "No se pudo iniciar"                       | Reinicia la PC. Si sigue, en **Servicios** de Windows `Sobremesa Encuestas - Base de datos` y `Sobremesa Encuestas - Aplicación` deben estar "En ejecución": inícialos en ese orden y revisa las bitácoras.                                                  |
+| El icono se queda en "Iniciando…" o dice "No se pudo iniciar"                       | Reinicia la PC. Si sigue, en **Servicios** de Windows `Cuéntanos - Base de datos` y `Cuéntanos - Aplicación` deben estar "En ejecución": inícialos en ese orden y revisa las bitácoras.                                                                      |
 | Entré en la PC y en otro equipo me vuelve a pedir contraseña                        | Es normal: la sesión es por dirección (`localhost` en la PC, `http://IP:3000` en los demás).                                                                                                                                                                 |
 | El instalador avisa que el puerto 3000 está ocupado                                 | Cierra o desinstala el programa que indica el aviso y vuelve a instalar.                                                                                                                                                                                     |
 | "Los archivos se copiaron, pero la configuración no terminó"                        | Abre `C:\ProgramData\SobremesaEncuestas\logs\instalacion.log`: la última línea con `ERROR` dice el motivo. Vuelve a ejecutar el instalador después de corregirlo; retoma donde se quedó.                                                                     |
@@ -278,7 +278,7 @@ Seguridad:
 
 ## Modos: Nube, Solo en su PC y PC sincronizada
 
-Cada cliente tiene un modo que se elige en la Administración (ficha del cliente → "Sobremesa en su PC"). El cambio llega a la PC en unos minutos o la siguiente vez que alguien entra.
+Cada cliente tiene un modo que se elige en la Administración (ficha del cliente → "Cuéntanos en su PC"). El cambio llega a la PC en unos minutos o la siguiente vez que alguien entra.
 
 | Modo                         | Qué hace el .exe                                                                         | Datos                                                                                                    | Sin internet                                                                      |
 | ---------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -290,7 +290,7 @@ Cada cliente tiene un modo que se elige en la Administración (ficha del cliente
 
 ## Licencia de la PC
 
-La versión instalada no funciona sola: **se entra con las cuentas de la nube** (las de los clientes que se dan de alta en la Administración, `/plataforma`). Así nadie puede usar Sobremesa con solo copiar el instalador, y cada negocio ve solo lo suyo.
+La versión instalada no funciona sola: **se entra con las cuentas de la nube** (las de los clientes que se dan de alta en la Administración, `/plataforma`). Así nadie puede usar Cuéntanos con solo copiar el instalador, y cada negocio ve solo lo suyo.
 
 - **Iniciar sesión:** el login de la PC valida el correo y la contraseña en la nube. La nube responde a qué cliente pertenece la cuenta y entrega la licencia de ese cliente para esta PC. En la PC, cada cliente tiene **su propia cadena** (`organizations.cloud_org_id`): la primera vez se crea, y la persona entra a la cadena de SU cliente, con su rol y la misma contraseña de la web.
 - **Primera vez en una PC:** la activa un administrador del negocio. Un gerente de la nube solo puede entrar a una PC que su negocio ya activó.

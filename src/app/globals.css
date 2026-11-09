@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Paleta "sobremesa" (v2): fondo crema cálido, tinta casi negra y un color de acento que se elige
+ * Paleta "cuéntanos" (v2): fondo crema cálido, tinta casi negra y un color de acento que se elige
  * en Administración → Ajustes. El acento llega en --accent / --accent-dark desde /theme.css; los
  * valores de aquí son el respaldo (Jade). Los nombres "basil" se conservan por compatibilidad:
  * hoy significan "color de acento".

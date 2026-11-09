@@ -4,7 +4,7 @@ import "@fontsource-variable/public-sans";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Sobremesa · Encuestas de experiencia", template: "%s · Sobremesa" },
+  title: { default: "Cuéntanos · Encuestas de experiencia", template: "%s · Cuéntanos" },
   description: "Encuestas de experiencia para restaurantes, en tablets y por QR, con resultados el mismo día.",
   robots: { index: false, follow: false },
 };

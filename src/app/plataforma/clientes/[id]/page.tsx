@@ -100,13 +100,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
       />
 
       <Section
-        title="Sobremesa en su PC"
+        title="Cuéntanos en su PC"
         description="Cómo funciona el .exe de este cliente. El cambio se aplica en su PC en unos minutos (o la siguiente vez que entre). Para pasar de «Solo en su PC» a «Nube» sin perder datos, primero ponlo en «PC sincronizada» y deja que suba todo."
       >
         <PcModePicker orgId={org.id} mode={org.pcMode} />
       </Section>
 
-      <Section title="Datos del cliente" description="Para saber a quién llamar. Solo los ve el equipo de Sobremesa.">
+      <Section title="Datos del cliente" description="Para saber a quién llamar. Solo los ve el equipo de Cuéntanos.">
         <div className="panel p-5">
           <SpecForm
             action={updateClientAction.bind(null, org.id)}
@@ -126,7 +126,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         {restaurants.length === 0 ? (
           <div className="panel px-5 py-6 text-sm text-ink-soft">
             {pcs.some((p) => !p.revokedAt)
-              ? "En la web no tiene restaurantes: usa Sobremesa instalado en su PC. Lo que hay ahí se ve abajo, en «Instalaciones en PC»."
+              ? "En la web no tiene restaurantes: usa Cuéntanos instalado en su PC. Lo que hay ahí se ve abajo, en «Instalaciones en PC»."
               : "Todavía no da de alta restaurantes."}
           </div>
         ) : (
@@ -194,7 +194,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
       <Section
         title="Instalaciones en PC"
-        description="Las PCs donde el cliente instaló Sobremesa (el .exe). Cada una se activó al entrar con una cuenta de este negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en unos minutos (o, si la PC no tiene internet, en máximo 7 días)."
+        description="Las PCs donde el cliente instaló Cuéntanos (el .exe). Cada una se activó al entrar con una cuenta de este negocio y renueva su licencia mientras se usa. Si desactivas al cliente o das de baja una PC, se bloquea en unos minutos (o, si la PC no tiene internet, en máximo 7 días)."
       >
         {pcs.length === 0 ? (
           <div className="panel px-5 py-6 text-sm text-ink-soft">No tiene ninguna PC activada.</div>

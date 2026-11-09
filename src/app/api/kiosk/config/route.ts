@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const device = await authenticateDevice(req);
   if (!device) return NextResponse.json({ error: "Tablet no vinculada" }, { status: 401 });
   if (!(await restaurantAllowed(device.restaurantId))) {
-    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Sobremesa." }, { status: 402 });
+    return NextResponse.json({ error: "Este negocio no tiene licencia activa de Cuéntanos." }, { status: 402 });
   }
   const r = await getRestaurant(device.restaurantId);
   if (!r) return NextResponse.json({ error: "Restaurante no encontrado" }, { status: 404 });

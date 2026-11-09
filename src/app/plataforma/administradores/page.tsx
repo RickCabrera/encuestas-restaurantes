@@ -34,7 +34,7 @@ export default async function AdminsPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title="Administradores"
-        description="Quién puede entrar a la Administración de Sobremesa y ver a todos los clientes."
+        description="Quién puede entrar a la Administración de Cuéntanos y ver a todos los clientes."
         actions={
           <ModalForm
             action={createPlatformAdminAction}
@@ -171,7 +171,7 @@ export default async function AdminsPage({ searchParams }: { searchParams: Promi
                   </p>
                 </div>
                 <form action={grantPlatformAdminAction.bind(null, found.id)}>
-                  <ConfirmSubmit message={`¿Hacer a ${found.name} administrador de Sobremesa? Verá a todos los clientes.`}>
+                  <ConfirmSubmit message={`¿Hacer a ${found.name} administrador de Cuéntanos? Verá a todos los clientes.`}>
                     Hacer administrador
                   </ConfirmSubmit>
                 </form>

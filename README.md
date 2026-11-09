@@ -1,11 +1,11 @@
-# Sobremesa — Encuestas de experiencia para restaurantes
+# Cuéntanos — Encuestas de experiencia para restaurantes
 
 Sistema para que un grupo de restaurantes cree encuestas de satisfacción por sucursal y consulte los resultados. Los comensales responden en las **tablets del restaurante** (modo kiosko) o desde su celular con un **código QR**.
 
 - **Panel** (`/admin`): restaurantes, encuestas, tablets, usuarios y resultados.
 - **Encuesta pública** (`/r/<restaurante>`): la que abre el QR, sin login.
 - **Página de inicio** (`/`): presenta el producto y recibe solicitudes de demo.
-- **Administración** (`/plataforma`): para el equipo que opera Sobremesa. Clientes (cadenas), solicitudes de demo, pagos mensuales, conexiones, color de la interfaz y administradores. No existe en la versión instalada en PC.
+- **Administración** (`/plataforma`): para el equipo que opera Cuéntanos. Clientes (cadenas), solicitudes de demo, pagos mensuales, conexiones, color de la interfaz y administradores. No existe en la versión instalada en PC.
 - **Modo tablet** (`/kiosk`): app instalable que se vincula con un código de 6 dígitos, se reinicia sola entre comensales y guarda respuestas sin internet.
 
 La guía de despliegue está en [`docs/DEPLOY.md`](docs/DEPLOY.md), la versión instalable en una PC con Windows en [`docs/INSTALAR-PC.md`](docs/INSTALAR-PC.md), el manual para el cliente en [`docs/MANUAL.md`](docs/MANUAL.md) y el backlog original en [`docs/backlog.md`](docs/backlog.md).

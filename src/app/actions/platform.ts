@@ -71,9 +71,9 @@ export async function createClientInviteAction(_prev: LinkState, fd: FormData): 
     const hello = contactName ? `Hola ${contactName},` : "Hola,";
     await sendEmail({
       to: [email],
-      subject: "Tu acceso a Sobremesa",
-      text: `${hello}\n\nCon este enlace das de alta tu negocio en Sobremesa y creas tu cuenta de administrador (vence en 7 días y sirve una sola vez):\n${link}\n\nCualquier duda, responde este correo.`,
-      html: `<p>${escapeHtml(hello)}</p><p>Con este enlace das de alta tu negocio en Sobremesa y creas tu cuenta de administrador. Vence en 7 días y sirve una sola vez.</p><p><a href="${link}">Crear mi cuenta</a></p><p style="color:#666;font-size:13px">${link}</p>`,
+      subject: "Tu acceso a Cuéntanos",
+      text: `${hello}\n\nCon este enlace das de alta tu negocio en Cuéntanos y creas tu cuenta de administrador (vence en 7 días y sirve una sola vez):\n${link}\n\nCualquier duda, responde este correo.`,
+      html: `<p>${escapeHtml(hello)}</p><p>Con este enlace das de alta tu negocio en Cuéntanos y creas tu cuenta de administrador. Vence en 7 días y sirve una sola vez.</p><p><a href="${link}">Crear mi cuenta</a></p><p style="color:#666;font-size:13px">${link}</p>`,
     });
     emailed = true;
   }
@@ -292,9 +292,9 @@ export async function sendTestEmailAction(): Promise<ActionState> {
   }
   await sendEmail({
     to: [me.email],
-    subject: "Correo de prueba de Sobremesa",
-    text: `Hola ${me.name},\n\nSi lees esto, el correo saliente de Sobremesa funciona.\n\n${await appUrl()}`,
-    html: `<p>Hola ${escapeHtml(me.name)},</p><p>Si lees esto, el correo saliente de Sobremesa funciona.</p>`,
+    subject: "Correo de prueba de Cuéntanos",
+    text: `Hola ${me.name},\n\nSi lees esto, el correo saliente de Cuéntanos funciona.\n\n${await appUrl()}`,
+    html: `<p>Hola ${escapeHtml(me.name)},</p><p>Si lees esto, el correo saliente de Cuéntanos funciona.</p>`,
   });
   return {
     ok: true,

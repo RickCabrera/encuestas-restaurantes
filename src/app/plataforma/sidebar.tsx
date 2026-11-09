@@ -23,7 +23,7 @@ export function PlatformSidebar({
       subtitle="Administración"
       theme={theme}
       themeTarget="panel-root"
-      user={{ name: userName, detail: `Sobremesa · ${userEmail}` }}
+      user={{ name: userName, detail: `Cuéntanos · ${userEmail}` }}
       groups={[
         {
           items: [

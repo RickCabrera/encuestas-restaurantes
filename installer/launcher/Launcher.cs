@@ -1,4 +1,4 @@
-// Acceso directo "Sobremesa Encuestas" de la version instalada en PC (docs/INSTALAR-PC.md).
+// Acceso directo "Cuéntanos" de la version instalada en PC (docs/INSTALAR-PC.md).
 // Abre el sistema en una ventana propia, sin consola y sin pedir permisos de administrador.
 //
 // Lo compila installer/build.ps1 con el csc.exe de .NET Framework que trae Windows
@@ -21,8 +21,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: AssemblyTitle("Sobremesa Encuestas")]
-[assembly: AssemblyProduct("Sobremesa Encuestas")]
+[assembly: AssemblyTitle("Cuéntanos")]
+[assembly: AssemblyProduct("Cuéntanos")]
 [assembly: AssemblyCompany("SITIRT")]
 
 static class Launcher
@@ -179,7 +179,7 @@ static class Launcher
         }
         catch (Exception e)
         {
-            MessageBox.Show("No se pudo abrir el navegador: " + e.Message + "\n\nAbre a mano " + Base, "Sobremesa Encuestas",
+            MessageBox.Show("No se pudo abrir el navegador: " + e.Message + "\n\nAbre a mano " + Base, "Cuéntanos",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
@@ -198,7 +198,7 @@ sealed class StartingForm : Form
 
     public StartingForm()
     {
-        Text = "Sobremesa Encuestas";
+        Text = "Cuéntanos";
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -277,7 +277,7 @@ sealed class StartingForm : Form
         }
         title.Text = "No se pudo iniciar";
         detail.Text = "El sistema no respondió. Reinicia la PC y vuelve a intentar. Si sigue igual, revisa en Servicios de Windows " +
-            "que “Sobremesa Encuestas - Base de datos” y “Sobremesa Encuestas - Aplicación” estén en ejecución.";
+            "que “Cuéntanos - Base de datos” y “Cuéntanos - Aplicación” estén en ejecución.";
         progress.Visible = false;
         retry.Visible = true;
         close.Visible = true;

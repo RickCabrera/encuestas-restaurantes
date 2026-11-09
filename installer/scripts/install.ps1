@@ -145,10 +145,10 @@ function Initialize-Cluster($Values) {
   }
 
   # Solo esta PC puede conectarse, y siempre con contraseña.
-  $hba = "# Sobremesa Encuestas: solo conexiones desde esta misma PC, con contraseña.`nhost    all    all    127.0.0.1/32    scram-sha-256`n"
+  $hba = "# Cuéntanos: solo conexiones desde esta misma PC, con contraseña.`nhost    all    all    127.0.0.1/32    scram-sha-256`n"
   [System.IO.File]::WriteAllText((Join-Path $PgData 'pg_hba.conf'), $hba, $Utf8NoBom)
   $logs = (Join-Path $LogDir 'postgres').Replace('\', '/')
-  $conf = "`n# ─── Sobremesa Encuestas ───`nlisten_addresses = '127.0.0.1'`nport = $($Values['LOCAL_DB_PORT'])`npassword_encryption = 'scram-sha-256'`n" +
+  $conf = "`n# ─── Cuéntanos ───`nlisten_addresses = '127.0.0.1'`nport = $($Values['LOCAL_DB_PORT'])`npassword_encryption = 'scram-sha-256'`n" +
     "logging_collector = on`nlog_directory = '$logs'`nlog_filename = 'postgres-%a.log'`nlog_truncate_on_rotation = on`nlog_rotation_age = 1d`n"
   [System.IO.File]::AppendAllText((Join-Path $PgData 'postgresql.conf'), $conf, $Utf8NoBom)
 }
@@ -175,7 +175,7 @@ function Register-Services($Values) {
   $pgCtl = Join-Path $PgBin 'pg_ctl.exe'
   Write-ServiceXml $DbService (@(
       "  <name>$AppName - Base de datos</name>",
-      '  <description>PostgreSQL de Sobremesa Encuestas. Solo acepta conexiones de esta PC (127.0.0.1).</description>',
+      '  <description>PostgreSQL de Cuéntanos. Solo acepta conexiones de esta PC (127.0.0.1).</description>',
       "  <executable>$(Join-Path $PgBin 'postgres.exe')</executable>",
       "  <arguments>-D `"$PgData`"</arguments>",
       "  <stopexecutable>$pgCtl</stopexecutable>",
@@ -184,7 +184,7 @@ function Register-Services($Values) {
     ) -join "`n")
   Write-ServiceXml $AppService (@(
       "  <name>$AppName - Aplicación</name>",
-      "  <description>Panel y encuestas de Sobremesa en http://IP-de-esta-PC:$AppPort</description>",
+      "  <description>Panel y encuestas de Cuéntanos en http://IP-de-esta-PC:$AppPort</description>",
       "  <executable>$NodeExe</executable>",
       "  <arguments>--env-file=`"$EnvFile`" local-server.cjs</arguments>",
       "  <workingdirectory>$(Join-Path $InstallDir 'app')</workingdirectory>",

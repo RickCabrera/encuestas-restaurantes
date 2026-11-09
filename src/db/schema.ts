@@ -39,7 +39,7 @@ export const responseChannel = pgEnum("response_channel", ["KIOSK", "QR"]);
 /** USER: cuenta dentro de una cadena que ya existe. NEW_ORG: da de alta una cadena nueva con su administrador. */
 export const inviteKind = pgEnum("invite_kind", ["USER", "NEW_ORG"]);
 /**
- * Cómo usa Sobremesa instalado en PC un cliente (se elige en la Administración):
+ * Cómo usa Cuéntanos instalado en PC un cliente (se elige en la Administración):
  * CLOUD: el .exe abre la web (una sola base, la de la nube). LOCAL: sus datos viven solo en su PC.
  * SYNC: la PC trabaja con su base y se sincroniza con la nube en los dos sentidos.
  */
@@ -62,7 +62,7 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   /** Desactivada: nadie de la cadena entra al panel y sus encuestas (QR y tablets) dejan de recibir respuestas. */
   active: boolean("active").notNull().default(true),
-  /** Cadena del equipo que opera Sobremesa (administradores de la plataforma). No aparece como cliente. */
+  /** Cadena del equipo que opera Cuéntanos (administradores de la plataforma). No aparece como cliente. */
   internal: boolean("internal").notNull().default(false),
   /** Día del mes (1–28) en que vence la mensualidad. */
   billingDay: integer("billing_day").notNull().default(5),

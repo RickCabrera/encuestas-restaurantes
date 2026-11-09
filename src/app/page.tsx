@@ -20,7 +20,7 @@ import { buttonClass } from "@/components/ui/button";
 import { isLocalMode } from "@/lib/app-mode";
 
 export const metadata: Metadata = {
-  title: { absolute: "Sobremesa · Encuestas de experiencia para restaurantes" },
+  title: { absolute: "Cuéntanos · Encuestas de experiencia para restaurantes" },
   description:
     "Encuestas de satisfacción en las tablets de tu restaurante y por QR en la mesa. Resultados por sucursal el mismo día y alertas de calificaciones bajas.",
   robots: { index: true, follow: true },
@@ -126,7 +126,7 @@ export default function Home() {
           }}
         />
         <nav className="mx-auto flex max-w-[1160px] items-center justify-between gap-4 px-5 py-5 sm:px-8">
-          <Link href="/" aria-label="Sobremesa, inicio">
+          <Link href="/" aria-label="Cuéntanos, inicio">
             <Logo tone="light" size={36} />
           </Link>
           <div className="flex items-center gap-1 sm:gap-2">
@@ -160,7 +160,7 @@ export default function Home() {
               Lo que tus comensales opinan, el mismo día.
             </h1>
             <p className="mt-6 max-w-xl text-[18px] leading-relaxed text-white/75">
-              Sobremesa pone una encuesta breve en las tablets de cada sucursal y en un QR en la mesa. Tú ves calificaciones,
+              Cuéntanos pone una encuesta breve en las tablets de cada sucursal y en un QR en la mesa. Tú ves calificaciones,
               recomendación y comentarios por restaurante, y te avisamos al instante cuando algo sale mal.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
@@ -343,7 +343,7 @@ export default function Home() {
             <Link href="/privacidad" className="hover:text-ink">
               Aviso de privacidad
             </Link>
-            <span>© {new Date().getFullYear()} Sobremesa</span>
+            <span>© {new Date().getFullYear()} Cuéntanos</span>
           </div>
         </div>
       </footer>

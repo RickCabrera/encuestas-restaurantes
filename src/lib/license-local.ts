@@ -294,14 +294,14 @@ export async function surveyAllowed(surveyId: string) {
 export type LocalLoginResult = { ok: true; user: User } | { ok: false; error: string } | { ok: "redirect"; url: string };
 
 const MESSAGES = {
-  credentials: "Correo o contraseña incorrectos. Usa la cuenta de tu negocio en Sobremesa (la misma de la web).",
+  credentials: "Correo o contraseña incorrectos. Usa la cuenta de tu negocio en Cuéntanos (la misma de la web).",
   role: "Esta PC todavía no está activada para tu negocio. La primera vez debe entrar el administrador del negocio.",
-  inactive: "La cuenta de tu negocio está desactivada en Sobremesa. Escríbenos para reactivarla.",
-  revoked: "Esta PC fue dada de baja de tu cuenta de Sobremesa. Pide que la reactiven.",
-  unbound: "Esta cuenta no tiene licencia de Sobremesa. Entra con la cuenta de tu negocio (la misma de la web).",
+  inactive: "La cuenta de tu negocio está desactivada en Cuéntanos. Escríbenos para reactivarla.",
+  revoked: "Esta PC fue dada de baja de tu cuenta de Cuéntanos. Pide que la reactiven.",
+  unbound: "Esta cuenta no tiene licencia de Cuéntanos. Entra con la cuenta de tu negocio (la misma de la web).",
   expired:
-    "Esta PC lleva más de 7 días sin poder conectarse a Sobremesa para renovar la licencia. Revisa el internet e intenta de nuevo.",
-  offline: "No hay conexión con Sobremesa y esta cuenta todavía no ha entrado en esta PC. Revisa el internet e intenta de nuevo.",
+    "Esta PC lleva más de 7 días sin poder conectarse a Cuéntanos para renovar la licencia. Revisa el internet e intenta de nuevo.",
+  offline: "No hay conexión con Cuéntanos y esta cuenta todavía no ha entrado en esta PC. Revisa el internet e intenta de nuevo.",
   unavailable: "El servicio de licencias no está disponible por ahora. Intenta de nuevo en unos minutos.",
 } as const;
 

@@ -17,7 +17,7 @@ Android solo deja actualizar una app si el APK nuevo está firmado con la misma 
 1. Genera el keystore en tu computadora (necesitas Java instalado):
 
    ```bash
-   keytool -genkeypair -v -keystore sobremesa-tablet.jks -alias tablet \
+   keytool -genkeypair -v -keystore cuentanos-tablet.jks -alias tablet \
      -keyalg RSA -keysize 2048 -validity 10000
    ```
 
@@ -27,19 +27,19 @@ Android solo deja actualizar una app si el APK nuevo está firmado con la misma 
 
    ```bash
    # macOS / Linux / Git Bash
-   base64 -w 0 sobremesa-tablet.jks > sobremesa-tablet.jks.b64
+   base64 -w 0 cuentanos-tablet.jks > cuentanos-tablet.jks.b64
    ```
 
    ```powershell
    # Windows PowerShell
-   [Convert]::ToBase64String([IO.File]::ReadAllBytes("sobremesa-tablet.jks")) | Set-Content sobremesa-tablet.jks.b64
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("cuentanos-tablet.jks")) | Set-Content cuentanos-tablet.jks.b64
    ```
 
 3. En GitHub: **Settings → Secrets and variables → Actions → New repository secret**. Crea estos cuatro:
 
    | Secret                      | Valor                                               |
    | --------------------------- | --------------------------------------------------- |
-   | `ANDROID_KEYSTORE_BASE64`   | El contenido completo de `sobremesa-tablet.jks.b64` |
+   | `ANDROID_KEYSTORE_BASE64`   | El contenido completo de `cuentanos-tablet.jks.b64` |
    | `ANDROID_KEYSTORE_PASSWORD` | La contraseña del keystore                          |
    | `ANDROID_KEY_ALIAS`         | `tablet`                                            |
    | `ANDROID_KEY_PASSWORD`      | La contraseña de la llave (normalmente la misma)    |
@@ -90,9 +90,9 @@ La segunda hace los dos gestos (menú del personal y menú de la app) con la pan
 
 1. Copia el `.apk` a la tablet (USB, correo o una liga de descarga) y ábrelo. Android pedirá permitir la instalación desde esa fuente: acéptalo.
 
-   Con cable y `adb`: `adb install sobremesa-tablet-1.1.0-37.apk`
+   Con cable y `adb`: `adb install cuentanos-tablet-1.1.0-37.apk`
 
-2. Abre **Sobremesa Tablet**. La primera vez pide la **Dirección del servidor**:
+2. Abre **Cuéntanos Tablet**. La primera vez pide la **Dirección del servidor**:
    - En internet: `https://encuestas.sitirt.mx`
    - En la red local: `http://192.168.1.50:3000`
 
@@ -198,7 +198,7 @@ Si la tablet es device owner estas opciones no aparecen: ya tiene el bloqueo tot
 
 ### Usarla como pantalla de inicio
 
-Presiona el botón Inicio; Android pregunta qué app usar como inicio. Elige **Sobremesa Tablet → Siempre**. Desde entonces el botón Inicio regresa a la encuesta y la app abre sola al encender la tablet.
+Presiona el botón Inicio; Android pregunta qué app usar como inicio. Elige **Cuéntanos Tablet → Siempre**. Desde entonces el botón Inicio regresa a la encuesta y la app abre sola al encender la tablet.
 
 Para deshacerlo: **Ajustes → Apps → Apps predeterminadas → App de inicio**.
 
@@ -233,7 +233,7 @@ Necesitas una computadora con `adb` (viene en las [platform-tools de Android](ht
 5. Instala la app y regístrala como device owner. El comando es exactamente este:
 
    ```bash
-   adb install sobremesa-tablet-1.1.0-37.apk
+   adb install cuentanos-tablet-1.1.0-37.apk
    adb shell dpm set-device-owner mx.sitirt.encuestas.tablet/.AdminReceiver
    ```
 
@@ -262,7 +262,7 @@ Si nadie recuerda el PIN del restaurante, cámbialo en el panel (la tablet lo to
 | "…respondió, pero no es un servidor de encuestas"      | La dirección apunta a otro sitio o a otro puerto. Abre `<dirección>/api/health` en un navegador: debe mostrar `{"status":"ok",…}`.                                                                                                                                                                                           |
 | "Sin conexión, reintentando" que no se quita           | El servidor está apagado, o cambió de dirección y la app no lo encontró en la red (otra red o puerto). Mantén las dos esquinas 5 segundos para cambiarla.                                                                                                                                                                    |
 | Se abre el menú del personal en vez del menú de la app | Los dos dedos no tocaron a la vez. Cierra el menú e inténtalo de nuevo.                                                                                                                                                                                                                                                      |
-| Nadie recuerda el PIN y hay que cambiar el servidor    | Cambia el PIN del restaurante en el panel; la tablet lo toma la siguiente vez que se conecte al servidor actual. Si ese servidor ya no existe, borra los datos de la app (**Ajustes → Apps → Sobremesa Tablet → Almacenamiento → Borrar datos**) y configúrala de nuevo. Se pierden las respuestas que no se habían enviado. |
+| Nadie recuerda el PIN y hay que cambiar el servidor    | Cambia el PIN del restaurante en el panel; la tablet lo toma la siguiente vez que se conecte al servidor actual. Si ese servidor ya no existe, borra los datos de la app (**Ajustes → Apps → Cuéntanos Tablet → Almacenamiento → Borrar datos**) y configúrala de nuevo. Se pierden las respuestas que no se habían enviado. |
 | "App no instalada" al actualizar                       | El APK está firmado con otra llave (por ejemplo, una compilación de prueba). Usa el APK del workflow.                                                                                                                                                                                                                        |
 | El workflow falla en "Comprobar secrets de firma"      | Falta alguno de los cuatro secrets de la sección 1.                                                                                                                                                                                                                                                                          |
 | Las barras del sistema reaparecen al deslizar          | Es el comportamiento normal de Android y se ocultan solas. Para impedirlo, usa **Bloquear tablet** o el bloqueo total.                                                                                                                                                                                                       |

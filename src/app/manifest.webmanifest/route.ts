@@ -8,8 +8,8 @@ export const dynamic = "force-static";
 export function GET() {
   return Response.json(
     {
-      name: "Sobremesa · Modo tablet",
-      short_name: "Sobremesa",
+      name: "Cuéntanos · Modo tablet",
+      short_name: "Cuéntanos",
       description: "Encuesta de experiencia para comensales",
       id: "/kiosk",
       start_url: "/kiosk",

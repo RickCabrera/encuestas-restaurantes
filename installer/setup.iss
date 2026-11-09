@@ -1,4 +1,4 @@
-; Instalador de Windows de Sobremesa Encuestas (Inno Setup 6).
+; Instalador de Windows de Cuéntanos (Inno Setup 6).
 ; Lo compila installer/build.ps1, que pasa AppVersion, PgMajor, PayloadDir y OutputDir.
 ; La configuración de la PC la hace tools\install.ps1; aquí solo se copian archivos y se le llama.
 
@@ -18,7 +18,7 @@
   #define IconFile "assets\sobremesa.ico"
 #endif
 
-#define AppName "Sobremesa Encuestas"
+#define AppName "Cuéntanos"
 #define PowerShell "{sys}\WindowsPowerShell\v1.0\powershell.exe"
 #define PsFile "-NoProfile -ExecutionPolicy Bypass -File"
 
@@ -31,7 +31,7 @@ AppVerName={#AppName} {#AppVersion}
 AppPublisher=SITIRT
 VersionInfoVersion={#AppVersion}
 ; Carpeta fija: los servicios de Windows quedan registrados con esta ruta.
-DefaultDirName={autopf}\Sobremesa Encuestas
+DefaultDirName={autopf}\Cuéntanos
 DisableDirPage=yes
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
@@ -40,7 +40,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 OutputDir={#OutputDir}
-OutputBaseFilename=SobremesaEncuestas-Setup-{#AppVersion}
+OutputBaseFilename=Cuentanos-Setup-{#AppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -62,6 +62,9 @@ Type: filesandordirs; Name: "{app}\tools"
 ; El acceso "Abrir el panel" de las primeras versiones: lo reemplaza el lanzador.
 Type: files; Name: "{app}\Panel.url"
 Type: files; Name: "{group}\Abrir el panel.lnk"
+; Accesos con el nombre anterior del producto (Sobremesa): los nuevos se llaman "Cuéntanos".
+Type: files; Name: "{autodesktop}\Sobremesa Encuestas.lnk"
+Type: files; Name: "{group}\Sobremesa Encuestas.lnk"
 
 [Files]
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
@@ -69,14 +72,14 @@ Source: "{#PayloadDir}\tools\precheck.ps1"; Flags: dontcopy
 
 [Icons]
 ; El programa: abre el sistema en su propia ventana. No pide permisos de administrador.
-Name: "{group}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
-Name: "{autodesktop}\Sobremesa Encuestas"; Filename: "{app}\SobremesaEncuestas.exe"
+Name: "{group}\Cuéntanos"; Filename: "{app}\SobremesaEncuestas.exe"
+Name: "{autodesktop}\Cuéntanos"; Filename: "{app}\SobremesaEncuestas.exe"
 Name: "{group}\Datos de la instalación (Listo)"; Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""
 Name: "{group}\Restablecer contraseña de administrador"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\restablecer-contrasena.ps1"""
 Name: "{group}\Actualizar la IP"; Filename: "{#PowerShell}"; Parameters: "{#PsFile} ""{app}\tools\actualizar-ip.ps1"""
 
 [Run]
-Filename: "{app}\SobremesaEncuestas.exe"; Description: "Abrir Sobremesa Encuestas"; Flags: postinstall nowait skipifsilent; Check: InstallSucceeded
+Filename: "{app}\SobremesaEncuestas.exe"; Description: "Abrir Cuéntanos"; Flags: postinstall nowait skipifsilent; Check: InstallSucceeded
 ; Página "Listo". Se abre con permisos de administrador porque solo ellos pueden leerla.
 Filename: "{#PowerShell}"; Parameters: "-WindowStyle Hidden {#PsFile} ""{app}\tools\ver-listo.ps1"""; Description: "Ver los datos de la instalación (IP y dirección para las tablets)"; Flags: postinstall nowait skipifsilent runascurrentuser; Check: InstallSucceeded
 
@@ -128,7 +131,7 @@ begin
     0: ;
     3:
       if SuppressibleMsgBox('El puerto 3000 de esta PC ya lo está usando otro programa: ' + String(Info) + '.' + #13#10#13#10 +
-        'Sobremesa Encuestas necesita ese puerto. Cierra ese programa (o desinstálalo) y vuelve a instalar.' + #13#10#13#10 +
+        'Cuéntanos necesita ese puerto. Cierra ese programa (o desinstálalo) y vuelve a instalar.' + #13#10#13#10 +
         '¿Continuar de todos modos? Si el puerto sigue ocupado, la aplicación no va a arrancar.',
         mbError, MB_YESNO or MB_DEFBUTTON2, IDNO) <> IDYES then
       begin
@@ -136,7 +139,7 @@ begin
         Result := 'El puerto 3000 está ocupado por ' + String(Info) + '. No se instaló nada.';
       end;
     4:
-      Result := 'Hay una base de datos de Sobremesa Encuestas en esta PC pero falta su archivo de configuración (.env). ' +
+      Result := 'Hay una base de datos de Cuéntanos en esta PC pero falta su archivo de configuración (.env). ' +
         'No se tocó nada. Restaura C:\ProgramData\SobremesaEncuestas\.env y vuelve a instalar.';
     5:
       begin
@@ -173,7 +176,7 @@ begin
   RemoveData := False;
   if UninstallSilent then
     exit;
-  if MsgBox('¿Quieres CONSERVAR los datos de Sobremesa Encuestas en esta PC?' + #13#10#13#10 +
+  if MsgBox('¿Quieres CONSERVAR los datos de Cuéntanos en esta PC?' + #13#10#13#10 +
     'Sí: se quita el programa pero se quedan la base de datos, la configuración y los respaldos en C:\ProgramData\SobremesaEncuestas. Si lo vuelves a instalar, todo sigue ahí.' + #13#10#13#10 +
     'No: se borra todo, incluidas las encuestas respondidas y los respaldos.', mbConfirmation, MB_YESNO) = IDNO then
     RemoveData := MsgBox('Se van a BORRAR todas las encuestas, usuarios y respaldos de esta PC. No se puede deshacer.' + #13#10#13#10 +

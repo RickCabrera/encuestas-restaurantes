@@ -57,8 +57,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {localOnly ? (
             <div className="mb-6">
               <Notice tone="amber">
-                <strong>Tu negocio usa Sobremesa instalado en tu PC.</strong> Sus restaurantes, encuestas y respuestas viven en
-                esa PC, así que aquí en la web no se ven. Ábrelo desde el acceso directo de Sobremesa en tu PC.
+                <strong>Tu negocio usa Cuéntanos instalado en tu PC.</strong> Sus restaurantes, encuestas y respuestas viven en
+                esa PC, así que aquí en la web no se ven. Ábrelo desde el acceso directo de Cuéntanos en tu PC.
               </Notice>
             </div>
           ) : null}

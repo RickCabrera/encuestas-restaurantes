@@ -46,7 +46,7 @@ describe("cadena interna y clientes", () => {
   it("la cadena interna no aparece como cliente ni en pagos", async () => {
     const internal = await getOrCreateInternalOrg();
     expect((await getOrCreateInternalOrg()).id).toBe(internal.id);
-    await createUser(internal.id, "equipo@sobremesa.test", "ADMIN");
+    await createUser(internal.id, "equipo@cuentanos.test", "ADMIN");
     const clients = await listClients();
     expect(clients.map((c) => c.name)).toEqual(["Cadena A"]);
     expect(clients[0]).toMatchObject({ restaurants: 2, tablets: 1, users: 2, responses30: 3 });

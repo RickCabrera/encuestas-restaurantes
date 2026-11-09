@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Marca de Sobremesa para la pantalla de configuración. -->
+<!-- Marca de Cuéntanos para la pantalla de configuración. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape>
