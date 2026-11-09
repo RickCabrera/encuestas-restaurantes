@@ -13,6 +13,8 @@ $ProgressPreference = 'SilentlyContinue'
 $Setup = (Resolve-Path $Setup).Path
 $Data = Join-Path $env:ProgramData 'SobremesaEncuestas'
 $App = Join-Path $env:ProgramFiles 'Cuentanos'
+# Este archivo se ejecuta sin BOM: Windows PowerShell 5.1 lo lee como ANSI, asi que la "e" con acento va por codigo.
+$Nombre = "Cu$([char]0x00E9)ntanos"
 $Logs = Join-Path $(if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }) 'instalador-logs'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 $AdminsAndSystem = @('S-1-5-18', 'S-1-5-32-544')
@@ -86,14 +88,14 @@ function Get-Response([string]$Url, [hashtable]$Headers = @{}) {
   return $result
 }
 
-# El acceso directo "Cuéntanos": lanzador, iconos, llave de /inicio y permiso de arranque.
+# El acceso directo "Cuentanos": lanzador, iconos, llave de /inicio y permiso de arranque.
 function Check-Launcher {
   $launcher = Join-Path $App 'SobremesaEncuestas.exe'
   Check (Test-Path $launcher) 'Existe el lanzador SobremesaEncuestas.exe'
   $shell = New-Object -ComObject WScript.Shell
   $shortcuts = @{
-    'Escritorio'  = Join-Path $env:PUBLIC 'Desktop\Cuéntanos.lnk'
-    'menu Inicio' = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Cuéntanos\Cuéntanos.lnk'
+    'Escritorio'  = Join-Path $env:PUBLIC "Desktop\$Nombre.lnk"
+    'menu Inicio' = Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs\$Nombre\$Nombre.lnk"
   }
   foreach ($where in $shortcuts.Keys) {
     Check (Test-Path $shortcuts[$where]) "Acceso directo en $where"
@@ -151,7 +153,7 @@ function Check-Running([bool]$IsUpdate) {
   Check ($login.Headers.ContainsKey('Content-Security-Policy')) 'Con Content-Security-Policy'
   # Sin sesión, el panel lleva al login, que pide la cuenta del negocio en la nube.
   $panel = Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3000/admin'
-  Check ($panel.StatusCode -eq 200 -and $panel.Content -match 'cuenta de Cuéntanos') 'Sin sesion, /admin lleva al login con la cuenta de Cuéntanos'
+  Check ($panel.StatusCode -eq 200 -and $panel.Content -match "cuenta de $Nombre") 'Sin sesion, /admin lleva al login con la cuenta de Cuentanos'
 
   $services = @{ SobremesaEncuestasDB = 'NT AUTHORITY\NetworkService'; SobremesaEncuestasApp = 'NT AUTHORITY\LocalService' }
   foreach ($name in $services.Keys) {
@@ -175,7 +177,7 @@ function Check-Running([bool]$IsUpdate) {
   Check ([string]$rule.Profile -eq 'Private') "Regla de firewall solo para red privada ($($rule.Profile))"
   Check (($rule | Get-NetFirewallPortFilter).LocalPort -eq '3000') 'Regla de firewall en el puerto 3000'
 
-  $task = Get-ScheduledTask -TaskName 'Cuéntanos - Respaldo diario'
+  $task = Get-ScheduledTask -TaskName "$Nombre - Respaldo diario"
   Check ($task.Triggers[0].CimClass.CimClassName -eq 'MSFT_TaskDailyTrigger') 'Tarea programada diaria de respaldo'
   Check ($task.Principal.UserId -eq 'SYSTEM') 'La tarea de respaldo corre como SYSTEM'
 
@@ -266,10 +268,10 @@ try {
   Invoke-Uninstall
   Check (-not (Get-Service -Name 'SobremesaEncuestasApp', 'SobremesaEncuestasDB' -ErrorAction SilentlyContinue)) 'Servicios eliminados'
   Check (-not (Get-NetFirewallRule -Name 'SobremesaEncuestas-HTTP' -ErrorAction SilentlyContinue)) 'Regla de firewall eliminada'
-  Check (-not (Get-ScheduledTask -TaskName 'Cuéntanos - Respaldo diario' -ErrorAction SilentlyContinue)) 'Tarea de respaldo eliminada'
+  Check (-not (Get-ScheduledTask -TaskName "$Nombre - Respaldo diario" -ErrorAction SilentlyContinue)) 'Tarea de respaldo eliminada'
   Check (-not (Test-Path (Join-Path $Data 'energia-anterior.json'))) 'Suspension restaurada'
   Check ((Test-Path (Join-Path $Data 'pgdata\PG_VERSION')) -and (Test-Path (Join-Path $Data '.env'))) 'Los datos se conservaron'
-  Check (-not (Test-Path (Join-Path $env:PUBLIC 'Desktop/Cuéntanos.lnk'))) 'Acceso directo del Escritorio eliminado'
+  Check (-not (Test-Path (Join-Path $env:PUBLIC "Desktop/$Nombre.lnk"))) 'Acceso directo del Escritorio eliminado'
   Check (-not (Test-Path (Join-Path $App 'app\server.js'))) 'El programa se quito'
 
   Section '7. Reinstalar sobre los datos conservados'
