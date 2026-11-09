@@ -31,7 +31,7 @@ AppVerName={#AppName} {#AppVersion}
 AppPublisher=SITIRT
 VersionInfoVersion={#AppVersion}
 ; Carpeta fija: los servicios de Windows quedan registrados con esta ruta.
-DefaultDirName={autopf}\Cuéntanos
+DefaultDirName={autopf}\Cuentanos
 DisableDirPage=yes
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes

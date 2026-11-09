@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $Setup = (Resolve-Path $Setup).Path
 $Data = Join-Path $env:ProgramData 'SobremesaEncuestas'
-$App = Join-Path $env:ProgramFiles 'Cuéntanos'
+$App = Join-Path $env:ProgramFiles 'Cuentanos'
 $Logs = Join-Path $(if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }) 'instalador-logs'
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 $AdminsAndSystem = @('S-1-5-18', 'S-1-5-32-544')
