@@ -6,6 +6,7 @@ import { answers, responses, surveys, userRestaurants, users } from "@/db/schema
 import { formatDateTime } from "./dates";
 import { escapeHtml, sendEmail } from "./email";
 import { logger } from "./logger";
+import { earnForResponse, type EarnResult } from "./loyalty";
 import { AnswerValidationError, isLowScore, validateAnswers, type NormalizedAnswer, type RuleQuestion } from "./survey-rules";
 
 export const submitSchema = z.object({
@@ -15,6 +16,8 @@ export const submitSchema = z.object({
   startedAt: z.iso.datetime().optional(),
   submittedAt: z.iso.datetime().optional(),
   tableRef: z.string().trim().max(20).optional().nullable(),
+  /** Celular para el programa de puntos (opcional). */
+  phone: z.string().trim().max(20).optional().nullable(),
   website: z.string().optional(), // honeypot
 });
 
@@ -51,7 +54,7 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
     with: {
       questions: true,
       restaurant: {
-        columns: { id: true, name: true, active: true, organizationId: true },
+        columns: { id: true, name: true, active: true, organizationId: true, loyaltyPoints: true },
         with: { organization: { columns: { active: true } } },
       },
     },
@@ -103,6 +106,8 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
     : null;
   const lowScore = isLowScore(rules, normalized);
 
+  const wantsPoints = !!input.phone && survey.restaurant.loyaltyPoints > 0;
+  let loyalty: EarnResult | null = null;
   const inserted = await db.transaction(async (tx) => {
     const rows = await tx
       .insert(responses)
@@ -123,6 +128,16 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
       .returning({ id: responses.id });
     if (rows.length === 0) return false; // carrera: ya existía
     if (normalized.length) await tx.insert(answers).values(normalized.map((a) => ({ ...a, responseId: input.id })));
+    if (wantsPoints) {
+      loyalty = await earnForResponse(tx, {
+        organizationId: survey.restaurant.organizationId,
+        restaurantId: survey.restaurantId,
+        responseId: input.id,
+        phone: input.phone!,
+        points: survey.restaurant.loyaltyPoints,
+        at: submittedAt,
+      });
+    }
     return true;
   });
 
@@ -135,12 +150,14 @@ export async function submitResponse(input: SubmitInput, ctx: Context) {
     channel: ctx.channel,
     lowScore,
     durationSec,
+    loyalty: (loyalty as EarnResult | null)?.status ?? null,
   });
 
   return {
     ok: true as const,
     duplicate: false,
     lowScore,
+    loyalty: loyalty as EarnResult | null,
     alert: lowScore
       ? () =>
           sendLowScoreAlert({

@@ -49,7 +49,8 @@ export async function POST(req: Request) {
 
     if (result.alert) after(result.alert);
     if (Math.random() < 0.01) after(pruneRateLimits);
-    return NextResponse.json({ ok: true, duplicate: result.duplicate });
+    const loyalty = "loyalty" in result ? result.loyalty : null;
+    return NextResponse.json({ ok: true, duplicate: result.duplicate, ...(loyalty ? { loyalty } : {}) });
   } catch (e) {
     if (e instanceof SubmitError) return NextResponse.json({ error: e.message }, { status: e.status });
     logger.error("response.error", { message: (e as Error).message, ip });

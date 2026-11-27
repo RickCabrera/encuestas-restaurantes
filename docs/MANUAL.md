@@ -98,6 +98,19 @@ En la ficha de cada restaurante:
 
 **Qué es el NPS:** en "¿Nos recomendarías?" (0 a 10), quienes ponen 9 o 10 son promotores, de 7 a 8 pasivos y de 0 a 6 detractores. NPS = % promotores − % detractores, de −100 a +100.
 
+## Puntos (programa de lealtad)
+
+Los comensales pueden ganar puntos al contestar la encuesta (QR o tablet). Al final se les pregunta su celular; es opcional y pueden enviar sin él.
+
+- **Activarlo:** en **Puntos → Premios y configuración**, escribe cuántos puntos da cada sucursal por encuesta. Con 0 la encuesta no pide el celular. Las tablets lo toman en cerca de un minuto.
+- **Límite:** un celular gana puntos una vez al día por sucursal. Si contesta de nuevo ese día, la encuesta se guarda pero sin puntos.
+- **Saldo de la cadena:** los puntos se juntan en cualquier sucursal y se canjean en cualquiera.
+- **Premios:** en la misma página, agrega el catálogo (nombre y puntos que cuesta). Un premio desactivado ya no se puede canjear, pero los canjes pasados lo conservan.
+- **Canjear:** en **Puntos**, busca el celular del comensal, elige el premio y la sucursal, y toca **Canjear**. Si no le alcanza, el sistema no lo permite. Administradores y gerentes pueden canjear (los gerentes, en sus sucursales).
+- **Ajustes manuales:** solo administradores, con motivo (p. ej. una compensación). El saldo nunca queda en negativo.
+
+En el celular del comensal se muestra cuántos puntos ganó y su saldo. En la tablet solo se confirma el celular (la respuesta se envía en segundo plano).
+
 ## Avisos de calificaciones bajas
 
 En **Mi cuenta** activa "Recibir un correo cuando llegue una calificación baja": 2 estrellas o menos, o recomendación de 6 o menos. El administrador también puede activarlo para cada usuario en **Usuarios**.

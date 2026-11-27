@@ -3,6 +3,7 @@
 import {
   BarChart3,
   ClipboardList,
+  Gift,
   ListChecks,
   MessageSquareText,
   ShieldCheck,
@@ -39,6 +40,10 @@ export function Sidebar({
         { href: "/admin/responses", label: "Respuestas", icon: ListChecks },
         { href: "/admin/comments", label: "Comentarios", icon: MessageSquareText },
       ],
+    },
+    {
+      label: "Lealtad",
+      items: [{ href: "/admin/points", label: "Puntos", icon: Gift }],
     },
     {
       label: "Configuración",

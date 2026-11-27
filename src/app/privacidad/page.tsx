@@ -8,8 +8,19 @@ export default function PrivacyPage() {
       <h1 className="text-3xl font-semibold">Aviso de privacidad</h1>
       <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-ink-soft">
         <p>
-          Esta encuesta es anónima. No te pedimos nombre, correo, teléfono ni ningún otro dato que te identifique. Solo guardamos
-          tus respuestas, la fecha y hora, y el restaurante (y la mesa, si llegaste por un QR de mesa).
+          No te pedimos nombre, correo ni ningún otro dato que te identifique. Guardamos tus respuestas, la fecha y hora, y el
+          restaurante (y la mesa, si llegaste por un QR de mesa).
+        </p>
+        <h2 className="pt-2 text-lg font-semibold text-ink">Programa de puntos</h2>
+        <p>
+          Si el restaurante tiene programa de puntos, al final puedes escribir tu número de celular para acumularlos. Es opcional:
+          puedes enviar la encuesta sin él. Si lo escribes, guardamos el número junto con los puntos que ganas y canjeas (fecha,
+          sucursal y encuesta que los generó) para llevar tu saldo y que el personal del restaurante pueda entregarte tus premios.
+          No lo usamos para enviarte publicidad ni lo compartimos con terceros. En el celular desde el que contestaste, tu
+          navegador lo recuerda para la próxima vez.
+        </p>
+        <p>
+          Para ejercer tus derechos sobre tu número (acceso, rectificación, cancelación u oposición), contacta al restaurante.
         </p>
         <p>
           Usamos las respuestas únicamente para conocer tu experiencia y mejorar el servicio. No las vendemos ni las compartimos

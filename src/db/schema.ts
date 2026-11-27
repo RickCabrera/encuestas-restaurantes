@@ -46,6 +46,8 @@ export const inviteKind = pgEnum("invite_kind", ["USER", "NEW_ORG"]);
 export const pcMode = pgEnum("pc_mode", ["CLOUD", "LOCAL", "SYNC"]);
 /** Cómo se pagó una mensualidad (los pagos se capturan a mano en el panel de Administración). */
 export const paymentMethod = pgEnum("payment_method", ["TRANSFER", "CASH", "CARD", "OTHER"]);
+/** Movimiento de puntos: EARN (por contestar una encuesta), REDEEM (canje de un premio), ADJUST (ajuste manual). */
+export const loyaltyKind = pgEnum("loyalty_kind", ["EARN", "REDEEM", "ADJUST"]);
 /** Estado de una solicitud de demo que llegó desde la landing. */
 export const demoRequestStatus = pgEnum("demo_request_status", ["NEW", "CONTACTED", "CONVERTED", "DISCARDED"]);
 
@@ -128,6 +130,8 @@ export const restaurants = pgTable(
     logoData: bytea("logo_data"),
     logoMime: text("logo_mime"),
     logoUpdatedAt: timestamp("logo_updated_at", { withTimezone: true }),
+    /** Puntos que gana el comensal por contestar la encuesta en esta sucursal. 0 = no se piden puntos. */
+    loyaltyPoints: integer("loyalty_points").notNull().default(0),
     ...timestamps,
     /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
     syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -278,6 +282,82 @@ export const answers = pgTable(
     syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
   },
   (t) => [index("answers_response_idx").on(t.responseId), index("answers_question_idx").on(t.questionId)],
+);
+
+/** Catálogo de premios de la cadena (se canjean con puntos en cualquier sucursal). Se desactivan, no se borran. */
+export const loyaltyRewards = pgTable(
+  "loyalty_rewards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    pointsCost: integer("points_cost").notNull(),
+    active: boolean("active").notNull().default(true),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
+  },
+  (t) => [
+    index("loyalty_rewards_organization_idx").on(t.organizationId),
+    check("loyalty_rewards_cost_positive", sql`${t.pointsCost} > 0`),
+  ],
+);
+
+/**
+ * Libro de puntos: un renglón por movimiento, nunca se edita ni se borra. El saldo de un celular es
+ * la suma de sus movimientos en los restaurantes de la cadena. El comensal se identifica solo con su
+ * celular (10 dígitos), sin cuenta.
+ */
+export const loyaltyTransactions = pgTable(
+  "loyalty_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Sucursal donde ocurrió (por ella se sabe la cadena). */
+    restaurantId: uuid("restaurant_id")
+      .notNull()
+      .references(() => restaurants.id, { onDelete: "cascade" }),
+    /** Celular normalizado a 10 dígitos. */
+    phone: text("phone").notNull(),
+    kind: loyaltyKind("kind").notNull(),
+    /** Positivo al ganar, negativo al canjear; un ajuste puede ser de cualquier signo. */
+    points: integer("points").notNull(),
+    /** Solo EARN: día (`YYYY-MM-DD`, zona del negocio) en que contestó; uno por celular, sucursal y día. */
+    earnDay: text("earn_day"),
+    /** Solo EARN: la encuesta que le dio los puntos (una respuesta da puntos una sola vez). */
+    responseId: uuid("response_id")
+      .unique()
+      .references(() => responses.id, { onDelete: "set null" }),
+    rewardId: uuid("reward_id").references(() => loyaltyRewards.id, { onDelete: "set null" }),
+    /** Nombre del premio al momento del canje (el premio puede cambiar de nombre después). */
+    rewardName: text("reward_name"),
+    note: text("note"),
+    createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
+    createdByName: text("created_by_name"),
+    ...timestamps,
+    /** Lo mantiene un trigger; la sincronización PC ↔ nube lo usa para saber qué cambió. */
+    syncUpdatedAt: timestamp("sync_updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Orden de cambios de ESTA base (lo pone el trigger); la sincronización pide "lo que cambió después de N". */
+    syncSeq: bigint("sync_seq", { mode: "number" }).notNull().default(0),
+  },
+  (t) => [
+    index("loyalty_tx_phone_idx").on(t.phone, t.createdAt),
+    index("loyalty_tx_restaurant_idx").on(t.restaurantId, t.createdAt),
+    // Límite anti-abuso a nivel BD: una encuesta con puntos por celular, sucursal y día.
+    uniqueIndex("loyalty_tx_one_earn_per_day")
+      .on(t.restaurantId, t.phone, t.earnDay)
+      .where(sql`${t.kind} = 'EARN'`),
+    check(
+      "loyalty_tx_points_sign",
+      sql`(${t.kind} = 'EARN' and ${t.points} > 0 and ${t.earnDay} is not null) or (${t.kind} = 'REDEEM' and ${t.points} < 0) or (${t.kind} = 'ADJUST' and ${t.points} <> 0)`,
+    ),
+    check("loyalty_tx_phone_format", sql`${t.phone} ~ '^[0-9]{10}$'`),
+  ],
 );
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {
@@ -523,6 +603,15 @@ export const responsesRelations = relations(responses, ({ one, many }) => ({
   answers: many(answers),
 }));
 
+export const loyaltyRewardsRelations = relations(loyaltyRewards, ({ one }) => ({
+  organization: one(organizations, { fields: [loyaltyRewards.organizationId], references: [organizations.id] }),
+}));
+
+export const loyaltyTransactionsRelations = relations(loyaltyTransactions, ({ one }) => ({
+  restaurant: one(restaurants, { fields: [loyaltyTransactions.restaurantId], references: [restaurants.id] }),
+  reward: one(loyaltyRewards, { fields: [loyaltyTransactions.rewardId], references: [loyaltyRewards.id] }),
+}));
+
 export const answersRelations = relations(answers, ({ one }) => ({
   response: one(responses, { fields: [answers.responseId], references: [responses.id] }),
   question: one(questions, { fields: [answers.questionId], references: [questions.id] }),
@@ -547,6 +636,9 @@ export type Device = typeof devices.$inferSelect;
 export type Response = typeof responses.$inferSelect;
 export type Answer = typeof answers.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type LoyaltyReward = typeof loyaltyRewards.$inferSelect;
+export type LoyaltyTransaction = typeof loyaltyTransactions.$inferSelect;
+export type LoyaltyKind = (typeof loyaltyKind.enumValues)[number];
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type Installation = typeof installations.$inferSelect;
 export type OrgLicense = typeof orgLicenses.$inferSelect;

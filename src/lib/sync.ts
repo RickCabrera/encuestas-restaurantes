@@ -52,6 +52,9 @@ export const SYNC_TABLES: { name: string; key: string[]; own: Own; batch: number
         `${a}.response_id in (select x.id from responses x join restaurants r on r.id = x.restaurant_id where r.organization_id = '${o}')`,
       ),
   },
+  // Puntos: los premios antes que los movimientos (un canje apunta a su premio).
+  { name: "loyalty_rewards", key: ["id"], batch: 500, own: (a, o) => sql.raw(`${a}.organization_id = '${o}'`) },
+  { name: "loyalty_transactions", key: ["id"], batch: 2000, own: (a, o) => inOrgRestaurants(`${a}.restaurant_id`, o) },
 ];
 
 const TABLE_NAMES = new Set(SYNC_TABLES.map((t) => t.name));
@@ -126,7 +129,7 @@ export async function applyChanges(
       if (t.name === "surveys") rows = [...rows].sort((a, b) => Number(a.status === "ACTIVE") - Number(b.status === "ACTIVE"));
       for (const raw of rows) {
         const row: SyncRow = { ...raw };
-        if (t.name === "restaurants" || t.name === "users") row.organization_id = org;
+        if (t.name === "restaurants" || t.name === "users" || t.name === "loyalty_rewards") row.organization_id = org;
         if (t.name === "users") row.platform_admin = false;
         const key = t.key.map((k) => String(row[k] ?? "")).join(":");
         try {
