@@ -22,7 +22,7 @@ export async function resetDb() {
     migrated = true;
   }
   await db.execute(
-    sql`TRUNCATE answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, app_settings, installations, org_licenses, sync_deletions, login_tokens, restaurants, users, organizations CASCADE`,
+    sql`TRUNCATE loyalty_transactions, loyalty_rewards, answers, responses, questions, surveys, devices, user_restaurants, password_reset_tokens, signup_invites, rate_limits, payments, demo_requests, app_settings, installations, org_licenses, sync_deletions, login_tokens, restaurants, users, organizations CASCADE`,
   );
 }
 
@@ -176,6 +176,31 @@ export async function seedChain(name: string, key: string) {
     responseIds.push(id);
   }
 
+  // Puntos: la sucursal uno da 10 por encuesta, un premio y un comensal que ganó y canjeó.
+  await db.update(s.restaurants).set({ loyaltyPoints: 10 }).where(eq(s.restaurants.id, one.restaurant.id));
+  const [reward] = await db
+    .insert(s.loyaltyRewards)
+    .values({ organizationId: org.id, name: `Postre ${key}`, pointsCost: 5 })
+    .returning();
+  // Sin respuesta nueva: no altera los conteos de respuestas que revisan otras pruebas.
+  await db.insert(s.loyaltyTransactions).values({
+    restaurantId: one.restaurant.id,
+    phone: "5512345678",
+    kind: "EARN",
+    points: 10,
+    earnDay: "2026-01-01",
+  });
+  await db.insert(s.loyaltyTransactions).values({
+    restaurantId: one.restaurant.id,
+    phone: "5512345678",
+    kind: "REDEEM",
+    points: -5,
+    rewardId: reward.id,
+    rewardName: reward.name,
+    createdById: admin.id,
+    createdByName: admin.name,
+  });
+
   const invite = await createInvite({ organizationId: org.id, role: "ADMIN" });
 
   return {
@@ -190,6 +215,7 @@ export async function seedChain(name: string, key: string) {
     admin,
     manager,
     responseIds,
+    reward,
     invite,
     /** En orden alfabético, como los lista el panel. */
     restaurantNames: [`Restaurante ${key} dos`, `Restaurante ${key} uno`],
@@ -210,6 +236,8 @@ const TABLES = [
   "answers",
   "signup_invites",
   "password_reset_tokens",
+  "loyalty_rewards",
+  "loyalty_transactions",
 ] as const;
 
 /**
@@ -233,6 +261,8 @@ export async function chainFingerprint(orgId: string) {
     answers: sql`t.response_id in (select id from responses where restaurant_id in ${rest})`,
     signup_invites: sql`(t.organization_id = ${orgId} or t.used_by_user_id in ${usr})`,
     password_reset_tokens: sql`t.user_id in ${usr}`,
+    loyalty_rewards: sql`t.organization_id = ${orgId}`,
+    loyalty_transactions: sql`t.restaurant_id in ${rest}`,
   };
   const out: Record<string, string> = {};
   for (const table of TABLES) {

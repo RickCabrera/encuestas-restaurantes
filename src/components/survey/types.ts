@@ -11,6 +11,8 @@ export type RunnerSurvey = {
   welcomeText: string;
   closingText: string;
   questions: RunnerQuestion[];
+  /** Puntos que gana el comensal si deja su celular al final. 0 o ausente: no se piden. */
+  loyaltyPoints?: number;
 };
 
 export type RunnerRestaurant = {
@@ -28,8 +30,18 @@ export type SubmitPayload = {
   startedAt: string;
   submittedAt: string;
   tableRef?: string | null;
+  /** Celular para el programa de puntos (10 dígitos). */
+  phone?: string | null;
   website?: string; // honeypot
 };
+
+/** Lo que contestó el servidor sobre los puntos (la tablet no lo sabe: envía en segundo plano). */
+export type LoyaltyOutcome =
+  | { status: "earned"; points: number; balance: number }
+  | { status: "already_today"; balance: number }
+  | { status: "invalid_phone" };
+
+export type SubmitOutcome = { loyalty?: LoyaltyOutcome | null } | void;
 
 /** Elige texto blanco u oscuro según la luminancia del color de marca. */
 export function readableOn(hex: string) {

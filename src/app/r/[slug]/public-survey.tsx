@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SurveyRunner } from "@/components/survey/survey-runner";
-import type { RunnerRestaurant, RunnerSurvey, SubmitPayload } from "@/components/survey/types";
+import type { LoyaltyOutcome, RunnerRestaurant, RunnerSurvey, SubmitPayload } from "@/components/survey/types";
 
 const RESUBMIT_WINDOW_MS = 30 * 60 * 1000;
 
@@ -21,7 +21,7 @@ function recentlySent(restaurantKey: string) {
   }
 }
 
-async function postWithRetry(body: unknown, attempts = 3) {
+async function postWithRetry(body: unknown, attempts = 3): Promise<{ loyalty?: LoyaltyOutcome }> {
   let lastError: Error = new Error("No pudimos conectar.");
   for (let i = 0; i < attempts; i++) {
     try {
@@ -30,7 +30,7 @@ async function postWithRetry(body: unknown, attempts = 3) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (res.ok) return;
+      if (res.ok) return ((await res.json().catch(() => ({}))) as { loyalty?: LoyaltyOutcome }) ?? {};
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       // Errores del cliente no se reintentan.
       if (res.status < 500) throw Object.assign(new Error(data.error ?? "No pudimos guardar tu respuesta."), { final: true });
@@ -63,17 +63,20 @@ export function PublicSurvey({
   }, [restaurantKey]);
 
   const onSubmit = async (p: SubmitPayload) => {
-    await postWithRetry({ ...p, tableRef });
+    const result = await postWithRetry({ ...p, tableRef });
     try {
       localStorage.setItem(sentKey(restaurantKey), String(Date.now()));
     } catch {
       /* navegación privada */
     }
+    return { loyalty: result.loyalty ?? null };
   };
+
+  const withPoints = (survey.loyaltyPoints ?? 0) > 0;
 
   const footer = (
     <footer className="px-5 pb-5 text-center text-[13px] text-ink-faint sm:px-8">
-      Encuesta anónima: no pedimos datos personales.{" "}
+      {withPoints ? "Tu celular es opcional y solo se usa para tus puntos. " : "Encuesta anónima: no pedimos datos personales. "}
       <Link href="/privacidad" className="underline underline-offset-2 hover:text-ink-soft">
         Aviso de privacidad
       </Link>
@@ -95,7 +98,14 @@ export function PublicSurvey({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <SurveyRunner survey={survey} restaurant={restaurant} onSubmit={onSubmit} className="flex-1" footer={footer} />
+      <SurveyRunner
+        survey={survey}
+        restaurant={restaurant}
+        onSubmit={onSubmit}
+        className="flex-1"
+        footer={footer}
+        rememberPhoneKey="encuesta:celular"
+      />
     </div>
   );
 }

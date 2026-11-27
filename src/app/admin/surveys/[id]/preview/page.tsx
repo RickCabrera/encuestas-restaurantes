@@ -30,6 +30,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
           id: survey.id,
           welcomeText: survey.welcomeText,
           closingText: survey.closingText,
+          loyaltyPoints: survey.restaurant.loyaltyPoints,
           questions: survey.questions.map((q) => ({
             id: q.id,
             type: q.type,

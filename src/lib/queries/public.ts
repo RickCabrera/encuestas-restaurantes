@@ -20,13 +20,17 @@ export async function getRestaurantBySlug(slug: string) {
 export async function getActiveRunnerSurvey(restaurantId: string): Promise<RunnerSurvey | null> {
   const s = await db.query.surveys.findFirst({
     where: and(eq(surveys.restaurantId, restaurantId), eq(surveys.status, "ACTIVE")),
-    with: { questions: { orderBy: (q, { asc }) => asc(q.position) } },
+    with: {
+      questions: { orderBy: (q, { asc }) => asc(q.position) },
+      restaurant: { columns: { loyaltyPoints: true } },
+    },
   });
   if (!s || s.questions.length === 0) return null;
   return {
     id: s.id,
     welcomeText: s.welcomeText,
     closingText: s.closingText,
+    loyaltyPoints: s.restaurant.loyaltyPoints,
     questions: s.questions.map((q) => ({ id: q.id, type: q.type, text: q.text, required: q.required, options: q.options })),
   };
 }
