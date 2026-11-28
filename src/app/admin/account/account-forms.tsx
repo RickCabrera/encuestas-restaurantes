@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { changePasswordAction } from "@/app/actions/auth";
+import { changePasswordAction, deleteAccountAction } from "@/app/actions/auth";
 import { updateNotificationsAction } from "@/app/actions/users";
 import { Field, Notice } from "@/components/ui/primitives";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -10,6 +10,7 @@ import { initialState } from "@/lib/action-state";
 export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) {
   const [pw, pwAction] = useActionState(changePasswordAction, initialState);
   const [notif, notifAction] = useActionState(updateNotificationsAction, initialState);
+  const [del, delAction] = useActionState(deleteAccountAction, initialState);
   const pwForm = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (pw.ok) pwForm.current?.reset();
@@ -18,7 +19,7 @@ export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) 
 
   return (
     <div className="grid max-w-3xl gap-10">
-      <section className="grid gap-5 md:grid-cols-[200px_1fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
         <h2 className="text-lg font-semibold">Contraseña</h2>
         <form ref={pwForm} action={pwAction} className="panel space-y-5 p-5">
           {pw.ok ? <Notice tone="green">{pw.message}</Notice> : null}
@@ -39,7 +40,7 @@ export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) 
         </form>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-[200px_1fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
         <h2 className="text-lg font-semibold">Avisos</h2>
         <form action={notifAction} className="panel space-y-5 p-5">
           {notif.ok ? <Notice tone="green">{notif.message}</Notice> : null}
@@ -54,6 +55,38 @@ export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) 
           </label>
           <div className="flex justify-end">
             <SubmitButton>Guardar avisos</SubmitButton>
+          </div>
+        </form>
+      </section>
+
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
+        <h2 className="text-lg font-semibold text-chile">Eliminar cuenta</h2>
+        <form
+          action={delAction}
+          className="panel space-y-5 p-5"
+          onSubmit={(e) => {
+            if (!confirm("¿Eliminar tu cuenta? No se puede deshacer.")) e.preventDefault();
+          }}
+        >
+          {del.error ? <Notice tone="red">{del.error}</Notice> : null}
+          <p className="text-sm text-ink-soft">
+            Se borra tu usuario y ya no podrás entrar con este correo. Los datos de la cadena (restaurantes, encuestas, respuestas
+            y puntos) se conservan porque son del negocio. No se puede deshacer.
+          </p>
+          <Field label="Escribe tu contraseña para confirmar" htmlFor="delete-password" error={del.fieldErrors?.password}>
+            <input
+              id="delete-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              className="input"
+              required
+            />
+          </Field>
+          <div className="flex justify-end">
+            <SubmitButton variant="danger" pendingText="Eliminando…">
+              Eliminar mi cuenta
+            </SubmitButton>
           </div>
         </form>
       </section>

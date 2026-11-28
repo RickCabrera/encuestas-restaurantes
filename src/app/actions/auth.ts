@@ -143,6 +143,50 @@ export async function changePasswordAction(_prev: ActionState, formData: FormDat
   return { ok: true, message: "Contraseña actualizada. Se cerraron tus otras sesiones." };
 }
 
+/**
+ * "Eliminar mi cuenta" (lo exige Apple para apps con cuentas). Borra al usuario; lo que hizo en el
+ * panel se conserva sin su cuenta (las referencias quedan en blanco). Los datos de la cadena
+ * (restaurantes, encuestas, respuestas) no se borran: son del negocio, no de la persona.
+ */
+export async function deleteAccountAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const session = await requireUser();
+  if (isLocalMode()) {
+    return { error: "En la versión instalada en PC no se eliminan cuentas. Hazlo desde la web (cuentanos.com.mx)." };
+  }
+  const limit = await rateLimit(`delete-account:${session.id}`, 5, 15 * 60);
+  if (!limit.ok) return { error: "Demasiados intentos. Espera unos minutos." };
+
+  const password = String(formData.get("password") ?? "");
+  if (!password) return { fieldErrors: { password: ["Escribe tu contraseña para confirmar"] } };
+  const user = await db.query.users.findFirst({ where: eq(users.id, session.id) });
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    return { fieldErrors: { password: ["La contraseña no es correcta"] } };
+  }
+  if (user.platformAdmin) {
+    return { error: "Las cuentas con acceso a la administración de la plataforma no se eliminan desde aquí." };
+  }
+
+  // Si es el único administrador y hay más personas activas en la cadena, se quedarían sin quien la administre.
+  if (user.role === "ADMIN") {
+    const others = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(and(eq(users.organizationId, user.organizationId), eq(users.active, true), sql`${users.id} <> ${user.id}`));
+    if (others.length > 0 && !others.some((o) => o.role === "ADMIN")) {
+      return {
+        error:
+          "Eres el único administrador de tu cadena. Antes de eliminar tu cuenta, haz administrador a otra persona en Usuarios.",
+      };
+    }
+  }
+
+  await db.delete(users).where(eq(users.id, user.id));
+  logger.info("auth.account_deleted", { userId: user.id, organizationId: user.organizationId });
+  await destroySession();
+  (await cookies()).delete(RESTAURANT_COOKIE);
+  redirect("/login?eliminada=1");
+}
+
 export async function forgotPasswordAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = z.email().safeParse(
     String(formData.get("email") ?? "")

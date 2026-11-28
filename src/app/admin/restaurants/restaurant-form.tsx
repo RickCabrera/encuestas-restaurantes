@@ -40,7 +40,7 @@ export function RestaurantForm({
       {state.error ? <Notice tone="red">{state.error}</Notice> : null}
       {state.ok ? <Notice tone="green">{state.message}</Notice> : null}
 
-      <fieldset className="grid gap-5 md:grid-cols-[220px_1fr]">
+      <fieldset className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
         <legend className="sr-only">Datos generales</legend>
         <div>
           <h2 className="text-lg font-semibold">Datos generales</h2>
@@ -89,7 +89,7 @@ export function RestaurantForm({
         </div>
       </fieldset>
 
-      <fieldset className="grid gap-5 md:grid-cols-[220px_1fr]">
+      <fieldset className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
         <legend className="sr-only">Imagen</legend>
         <div>
           <h2 className="text-lg font-semibold">Imagen</h2>
@@ -111,7 +111,13 @@ export function RestaurantForm({
                   className="h-14 w-14 rounded-[var(--radius-sm)] border border-line object-contain p-1"
                 />
               ) : null}
-              <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" className="text-sm" />
+              <input
+                id="logo"
+                name="logo"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="w-full min-w-0 max-w-full text-sm"
+              />
             </div>
           </Field>
           {values?.hasLogo ? (
@@ -136,7 +142,7 @@ export function RestaurantForm({
         </div>
       </fieldset>
 
-      <fieldset className="grid gap-5 md:grid-cols-[220px_1fr]">
+      <fieldset className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
         <legend className="sr-only">Tablets</legend>
         <div>
           <h2 className="text-lg font-semibold">Tablets</h2>

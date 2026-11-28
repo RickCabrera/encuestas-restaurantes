@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const theme = (await cookies()).get(THEME_COOKIE)?.value === "dark" ? "dark" : "light";
 
   return (
-    <div id="panel-root" data-theme={theme} className="min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[264px_1fr]">
+    <div id="panel-root" data-theme={theme} className="min-h-dvh bg-paper text-ink lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
       {/* APP_VERSION la define el servicio de la versión instalada en PC; en nube no existe. */}
       <Sidebar
         isAdmin={user.role === "ADMIN"}

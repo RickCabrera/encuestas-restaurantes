@@ -149,7 +149,7 @@ export function RewardRowActions({ reward }: { reward: RewardValues }) {
   const [formKey, setFormKey] = useState(0);
   const [pending, start] = useTransition();
   return (
-    <div className="flex justify-end gap-1">
+    <div className="flex flex-col items-end gap-1 sm:flex-row sm:justify-end">
       <Button
         variant="ghost"
         size="sm"

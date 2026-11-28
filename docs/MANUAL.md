@@ -121,6 +121,10 @@ Solo para administradores. **Configuración → Usuarios → Agregar usuario**: 
 
 **Invitar con enlace** genera un enlace de un solo uso (vence en 7 días) para que la persona elija su propio correo y contraseña. La cuenta que se crea con ese enlace queda dentro de tu cadena.
 
+## Eliminar mi cuenta
+
+En **Mi cuenta → Eliminar cuenta**, con tu contraseña. Se borra tu usuario; los restaurantes, encuestas, respuestas y puntos de la cadena se quedan. Si eres el único administrador y hay más personas en la cadena, primero haz administrador a alguien más en **Usuarios**.
+
 ## Cadenas: alta y borrado (para quien opera el sistema)
 
 Esta sección no es para dueños ni gerentes: los comandos se corren en una terminal, dentro de la carpeta del proyecto.

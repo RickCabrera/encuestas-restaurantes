@@ -98,7 +98,7 @@ export function SurveyEditor({ surveyId, initial }: { surveyId: string; initial:
     });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-4">
         <DndContext id="survey-editor" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={questions.map((q) => q.key)} strategy={verticalListSortingStrategy}>

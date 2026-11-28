@@ -32,7 +32,7 @@ export default async function ResponseDetailPage({ params }: { params: Promise<{
           </span>
         }
       />
-      <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <ol className="panel divide-y divide-line-soft">
           {r.questions.map((q, i) => {
             const a = byQuestion.get(q.id);

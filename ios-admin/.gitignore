@@ -1,0 +1,9 @@
+# El proyecto lo genera XcodeGen desde project.yml.
+*.xcodeproj/
+build/
+dist/
+DerivedData/
+xcuserdata/
+*.p8
+*.p12
+*.mobileprovision

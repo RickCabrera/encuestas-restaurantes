@@ -59,7 +59,7 @@ export default async function PointsConfigPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Premio</th>
+                  <th className="min-w-[140px]">Premio</th>
                   <th className="text-right">Puntos</th>
                   <th>Estado</th>
                   <th />
