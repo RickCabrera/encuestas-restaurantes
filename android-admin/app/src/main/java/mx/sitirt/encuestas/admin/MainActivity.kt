@@ -216,7 +216,11 @@ class MainActivity : Activity() {
      */
     private fun applyInsets(root: View) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        window.setDecorFitsSystemWindows(false)
+        // Desde Android 15 ya es de borde a borde siempre; antes hay que pedirlo.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            @Suppress("DEPRECATION")
+            window.setDecorFitsSystemWindows(false)
+        }
         @Suppress("DEPRECATION")
         window.statusBarColor = Color.TRANSPARENT
         @Suppress("DEPRECATION")
