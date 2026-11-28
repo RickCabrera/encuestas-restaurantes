@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cuéntanos Admin</string>
+    <string name="offline_title">Sin conexión</string>
+    <string name="offline_body">No pudimos abrir el panel. Revisa tu internet e intenta de nuevo.</string>
+    <string name="retry">Reintentar</string>
+    <string name="downloading">Descargando %1$s…</string>
+    <string name="download_failed">No se pudo descargar el archivo</string>
+    <string name="no_app_for_link">No hay una app para abrir este enlace</string>
+</resources>

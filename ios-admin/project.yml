@@ -1,0 +1,56 @@
+# Proyecto de Xcode de la app de administradores. No se versiona el .xcodeproj: lo genera XcodeGen
+# (brew install xcodegen && xcodegen generate). Ver docs/APP-ADMIN.md.
+name: CuentanosAdmin
+options:
+  bundleIdPrefix: mx.sitirt.encuestas
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: es
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    # Servidor que abre la app (se puede cambiar al compilar).
+    CUENTANOS_SERVER_URL: "https://cuentanos.com.mx"
+targets:
+  CuentanosAdmin:
+    type: application
+    platform: iOS
+    sources:
+      - path: CuentanosAdmin
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: mx.sitirt.encuestas.admin
+        PRODUCT_NAME: CuentanosAdmin
+        INFOPLIST_FILE: CuentanosAdmin/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+  CuentanosAdminTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: CuentanosAdminTests
+    dependencies:
+      - target: CuentanosAdmin
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: mx.sitirt.encuestas.admin.tests
+schemes:
+  CuentanosAdmin:
+    build:
+      targets:
+        CuentanosAdmin: all
+        CuentanosAdminTests: [test]
+    test:
+      config: Debug
+      targets:
+        - CuentanosAdminTests
+    archive:
+      config: Release

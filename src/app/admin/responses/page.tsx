@@ -31,7 +31,39 @@ export default async function ResponsesPage({ searchParams }: { searchParams: Pr
         <EmptyState title="Sin respuestas con estos filtros">Amplía el rango de fechas o quita algún filtro.</EmptyState>
       ) : (
         <>
-          <div className="panel overflow-x-auto">
+          {/* Celular: tarjetas (la tabla obliga a deslizar de lado). */}
+          <ul className="panel divide-y divide-line-soft sm:hidden">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Link href={`/admin/responses/${r.id}`} className="block px-4 py-3 active:bg-paper/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{formatDateTime(r.submittedAt)}</span>
+                    {r.lowScore ? <Badge tone="red">Baja</Badge> : null}
+                  </div>
+                  <p className="mt-0.5 text-[13px] text-ink-soft">
+                    {r.restaurant} · {r.channel === "KIOSK" ? (r.device ?? "Tablet") : "QR"}
+                    {r.tableRef ? `, mesa ${r.tableRef}` : ""}
+                  </p>
+                  <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[13px]">
+                    <span>
+                      Alimentos <Stars n={r.food} />
+                    </span>
+                    <span>
+                      Atención <Stars n={r.service} />
+                    </span>
+                    <span>
+                      Recomienda{" "}
+                      <span className={cn("tabular-nums", r.nps !== null && r.nps <= 6 ? "font-medium text-chile" : "")}>
+                        {r.nps ?? "—"}
+                      </span>
+                    </span>
+                  </p>
+                  {r.comment ? <p className="mt-1.5 line-clamp-2 text-[14px] text-ink-soft">{r.comment}</p> : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="panel hidden overflow-x-auto sm:block">
             <table className="table">
               <thead>
                 <tr>

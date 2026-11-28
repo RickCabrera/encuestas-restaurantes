@@ -77,7 +77,7 @@ export default async function RestaurantPage({
         ) : null}
       </div>
 
-      <section className="mt-8 grid gap-5 md:grid-cols-[220px_1fr]">
+      <section className="mt-8 grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
         <div>
           <h2 className="text-lg font-semibold">Encuesta</h2>
           <p className="mt-1 text-sm text-ink-soft">Solo una encuesta puede estar activa a la vez.</p>
@@ -102,7 +102,7 @@ export default async function RestaurantPage({
         </div>
       </section>
 
-      <section className="mt-8 grid gap-5 md:grid-cols-[220px_1fr]">
+      <section className="mt-8 grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
         <div>
           <h2 className="text-lg font-semibold">Código QR</h2>
           <p className="mt-1 text-sm text-ink-soft">Para que el comensal responda desde su celular.</p>

@@ -18,7 +18,7 @@ export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) 
 
   return (
     <div className="grid max-w-3xl gap-10">
-      <section className="grid gap-5 md:grid-cols-[200px_1fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
         <h2 className="text-lg font-semibold">Contraseña</h2>
         <form ref={pwForm} action={pwAction} className="panel space-y-5 p-5">
           {pw.ok ? <Notice tone="green">{pw.message}</Notice> : null}
@@ -39,7 +39,7 @@ export function AccountForms({ notifyLowScores }: { notifyLowScores: boolean }) 
         </form>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-[200px_1fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
         <h2 className="text-lg font-semibold">Avisos</h2>
         <form action={notifAction} className="panel space-y-5 p-5">
           {notif.ok ? <Notice tone="green">{notif.message}</Notice> : null}

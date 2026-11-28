@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo del ícono: degradado del color de acento, como el logo de la web. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="315"
+        android:endColor="@color/basil_dark"
+        android:startColor="#23A285" />
+</shape>

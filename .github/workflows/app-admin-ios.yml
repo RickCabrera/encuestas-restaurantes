@@ -1,0 +1,162 @@
+name: App admin iOS
+
+# Compila la app de administradores para iPhone y iPad (ios-admin/) en una Mac de GitHub.
+# - Siempre: genera el proyecto, corre las pruebas en el simulador y compila en Release.
+# - Con los secrets de Apple: firma, deja el .ipa como artifact y (con tag o a mano) lo sube a
+#   App Store Connect / TestFlight.
+# Instrucciones y secrets: docs/APP-ADMIN.md
+on:
+  workflow_dispatch:
+    inputs:
+      subir_a_testflight:
+        description: "Subir a App Store Connect (TestFlight)"
+        type: boolean
+        default: false
+  push:
+    branches: [main, feature/app-admin-movil]
+    tags: ["admin-v*"]
+    paths:
+      - "ios-admin/**"
+      - ".github/workflows/app-admin-ios.yml"
+
+concurrency:
+  group: app-admin-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    # Apple exige Xcode 26 / SDK de iOS 26 para subir apps desde abril de 2026.
+    runs-on: macos-26
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: ios-admin
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Versión
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/admin-v* ]]; then v="${GITHUB_REF_NAME#admin-v}"; else v="1.0.$GITHUB_RUN_NUMBER"; fi
+          echo "VERSION_NAME=$v" >> "$GITHUB_ENV"
+          xcodebuild -version
+          echo "Versión $v ($BUILD_NUMBER)"
+
+      - name: Generar proyecto de Xcode
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pruebas en el simulador
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in d if "iOS" in k), key=lambda k: [int(x) for x in k.split("iOS-")[-1].split("-")])
+          phones = [x for k in reversed(ios) for x in d[k] if x["name"].startswith("iPhone")]
+          print(phones[0]["udid"])')
+          echo "Simulador: $udid"
+          set -o pipefail
+          xcodebuild test -project CuentanosAdmin.xcodeproj -scheme CuentanosAdmin \
+            -destination "id=$udid" CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/test.log" | grep -E "Test Case|error:|warning:.*(nearly matches|deprecated)|\*\* TEST" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" "$RUNNER_TEMP/test.log"
+
+      - name: ¿Hay firma de Apple?
+        run: |
+          if [ -n "$APPLE_TEAM_ID" ] && [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8_BASE64" ]; then
+            echo "SIGN=1" >> "$GITHUB_ENV"
+          else
+            echo "::notice::Sin secrets de Apple: se compila sin firmar (no se genera .ipa). Ver docs/APP-ADMIN.md"
+            echo "SIGN=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compilar Release sin firmar (verificación)
+        if: env.SIGN == '0'
+        run: |
+          set -o pipefail
+          xcodebuild -project CuentanosAdmin.xcodeproj -scheme CuentanosAdmin -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/CuentanosAdmin.xcarchive" \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO archive | grep -E "error:|\*\* ARCHIVE" || true
+          test -d "$RUNNER_TEMP/CuentanosAdmin.xcarchive/Products/Applications/CuentanosAdmin.app"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" -c "Print :DTSDKName" \
+            "$RUNNER_TEMP/CuentanosAdmin.xcarchive/Products/Applications/CuentanosAdmin.app/Info.plist"
+
+      - name: Llave de App Store Connect
+        if: env.SIGN == '1'
+        run: |
+          key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key"
+          echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      - name: Archivar y firmar (firma administrada por Apple)
+        if: env.SIGN == '1'
+        run: |
+          set -o pipefail
+          auth=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project CuentanosAdmin.xcodeproj -scheme CuentanosAdmin -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/CuentanosAdmin.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION_NAME" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            "${auth[@]}" archive | grep -E "error:|\*\* ARCHIVE" || true
+          test -d "$RUNNER_TEMP/CuentanosAdmin.xcarchive"
+
+          options() {
+            cat > "$RUNNER_TEMP/ExportOptions-$1.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>$1</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          }
+          options export
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/CuentanosAdmin.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions-export.plist" "${auth[@]}"
+          mkdir -p dist
+          name="cuentanos-admin-$VERSION_NAME-$BUILD_NUMBER"
+          cp "$RUNNER_TEMP/export/CuentanosAdmin.ipa" "dist/$name.ipa"
+          (cd dist && shasum -a 256 "$name.ipa" | tee "$name.ipa.sha256")
+          echo "ARTIFACT_NAME=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v5
+        if: env.SIGN == '1'
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ios-admin/dist/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Subir a App Store Connect (TestFlight)
+        if: env.SIGN == '1' && (startsWith(github.ref, 'refs/tags/admin-v') || inputs.subir_a_testflight)
+        run: |
+          auth=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          cat > "$RUNNER_TEMP/ExportOptions-upload.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/CuentanosAdmin.xcarchive" \
+            -exportPath "$RUNNER_TEMP/upload" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions-upload.plist" "${auth[@]}"
+
+      - name: Borrar llave
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
