@@ -7,7 +7,11 @@ import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Iniciar sesión" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; reset?: string; eliminada?: string }>;
+}) {
   if (await getSessionUser()) redirect("/admin");
   const sp = await searchParams;
   return (
@@ -18,6 +22,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           ? "Entra con el correo y la contraseña de tu cuenta de Cuéntanos (la misma de la web). La primera vez, esta PC necesita internet."
           : "Entra con el correo que te dio el administrador."}
       </p>
+      {sp.eliminada ? (
+        <div className="mb-6">
+          <Notice tone="green">Tu cuenta se eliminó.</Notice>
+        </div>
+      ) : null}
       {sp.reset ? (
         <div className="mb-6">
           <Notice tone="green">Tu contraseña se actualizó. Ya puedes iniciar sesión.</Notice>

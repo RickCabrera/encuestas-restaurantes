@@ -102,7 +102,7 @@ Los revisores necesitan entrar. Crea una cadena de demostración con datos de ej
 ## Riesgos conocidos en la revisión de Apple
 
 - **Guía 4.2 (funcionalidad mínima)**: Apple a veces rechaza apps que "solo muestran un sitio web". Esta app agrega cosas nativas (descargas con hoja de compartir, cámara para el logo, pantalla sin conexión, jalar para recargar) y es una herramienta de trabajo con cuenta, lo que suele pasar; si la rechazan, lo siguiente sería agregar **notificaciones push** de calificaciones bajas.
-- **Guía 5.1.1(v) (borrar cuenta)**: si la app permite crear cuentas, Apple pide poder borrarlas desde la app. Las cuentas se crean por invitación de un administrador, que hoy solo puede **desactivar** usuarios en _Usuarios_ (no borrarlos). Si Apple lo pide, hay que agregar "Eliminar mi cuenta" en _Mi cuenta_.
+- **Guía 5.1.1(v) (borrar cuenta)**: resuelto. En _Mi cuenta → Eliminar cuenta_ cualquier usuario borra su cuenta con su contraseña (el único administrador de una cadena con más personas primero tiene que nombrar a otro). Menciónalo en las notas de revisión.
 
 ## Compilar en tu computadora
 
